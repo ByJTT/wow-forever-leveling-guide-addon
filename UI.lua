@@ -5,6 +5,7 @@ local UI = ns.UI
 
 local frame
 local guidePicker
+local exportFrame
 
 local function Clamp(n, minv, maxv)
     if n < minv then return minv end
@@ -619,6 +620,107 @@ function UI:PrintStatus()
         title = step.title or step.name or step.desc or step.type or "Step"
     end
     ns:Print("Current: " .. tostring(title))
+end
+
+function UI:ShowExportDialog(text, dialogTitle)
+    self:Create()
+
+    if not exportFrame then
+        local f = CreateFrame("Frame", "ForeverLevelingGuideExportFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+        f:SetSize(560, 380)
+        f:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+        f:SetClampedToScreen(true)
+        f:SetFrameStrata("DIALOG")
+        f:SetMovable(true)
+        f:EnableMouse(true)
+        f:RegisterForDrag("LeftButton")
+        f:SetScript("OnDragStart", function(selfFrame) selfFrame:StartMoving() end)
+        f:SetScript("OnDragStop", function(selfFrame) selfFrame:StopMovingOrSizing() end)
+        CreateBackdrop(f)
+
+        local title = f:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -10)
+        title:SetPoint("TOPRIGHT", f, "TOPRIGHT", -34, -10)
+        title:SetJustifyH("LEFT")
+        f.title = title
+
+        local hint = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        hint:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -4)
+        hint:SetPoint("TOPRIGHT", f, "TOPRIGHT", -12, -30)
+        hint:SetJustifyH("LEFT")
+        hint:SetWordWrap(true)
+        hint:SetText("|cffaaaaaaPress Ctrl+A then Ctrl+C to copy. Use this report for in-game verification/tuning on WoW Forever (compare route flow relatively; keep routes original/clean-room).|r")
+        f.hint = hint
+
+        local close = CreateFrame("Button", nil, f, "UIPanelCloseButton")
+        close:SetPoint("TOPRIGHT", f, "TOPRIGHT", 2, 2)
+        close:SetScript("OnClick", function() f:Hide() end)
+
+        local scroll = CreateFrame("ScrollFrame", "ForeverLevelingGuideExportScroll", f, "UIPanelScrollFrameTemplate")
+        scroll:SetPoint("TOPLEFT", f, "TOPLEFT", 12, -46)
+        scroll:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -30, 42)
+
+        local edit = CreateFrame("EditBox", "ForeverLevelingGuideExportEditBox", scroll)
+        edit:SetMultiLine(true)
+        edit:SetAutoFocus(false)
+        edit:SetFontObject("ChatFontNormal")
+        edit:SetWidth(500)
+        edit:SetHeight(300)
+        edit:SetTextInsets(4, 4, 4, 4)
+        edit:SetScript("OnEscapePressed", function() f:Hide() end)
+        edit:SetScript("OnEditFocusGained", function(selfEdit)
+            selfEdit:HighlightText()
+        end)
+        scroll:SetScrollChild(edit)
+        f.editBox = edit
+        f.scroll = scroll
+
+        local selectBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+        selectBtn:SetSize(90, 22)
+        selectBtn:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", 12, 12)
+        selectBtn:SetText("Select All")
+        selectBtn:SetScript("OnClick", function()
+            if f.editBox then
+                f.editBox:SetFocus()
+                f.editBox:HighlightText()
+            end
+        end)
+
+        local closeBtn = CreateFrame("Button", nil, f, "UIPanelButtonTemplate")
+        closeBtn:SetSize(80, 22)
+        closeBtn:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -12, 12)
+        closeBtn:SetText("Close")
+        closeBtn:SetScript("OnClick", function() f:Hide() end)
+
+        f:SetScript("OnShow", function()
+            if f.editBox then
+                f.editBox:SetFocus()
+                f.editBox:HighlightText()
+            end
+        end)
+
+        exportFrame = f
+    end
+
+    exportFrame.title:SetText(tostring(dialogTitle or "Debug Export"))
+
+    local textStr = tostring(text or "")
+    local scrollWidth = (exportFrame.scroll and exportFrame.scroll:GetWidth()) or 500
+    if scrollWidth < 100 then scrollWidth = 500 end
+    exportFrame.editBox:SetWidth(scrollWidth)
+
+    local _, lineHeight = exportFrame.editBox:GetFont()
+    if type(lineHeight) ~= "number" or lineHeight <= 0 then lineHeight = 14 end
+    local lineCount = 1
+    for _ in textStr:gmatch("\n") do lineCount = lineCount + 1 end
+    exportFrame.editBox:SetHeight(math.max(280, (lineCount * lineHeight) + 24))
+
+    exportFrame.editBox:SetText(textStr)
+    exportFrame.editBox:SetCursorPosition(0)
+    exportFrame:Show()
+    exportFrame.editBox:SetFocus()
+    exportFrame.editBox:HighlightText()
+    return true
 end
 
 function UI:Initialize()

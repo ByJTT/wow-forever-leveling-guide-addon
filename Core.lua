@@ -344,6 +344,221 @@ function ns:PrintSuggestedGuide(prefix)
     return true
 end
 
+local function SafeToString(v)
+    if v == nil then return "nil" end
+    local t = type(v)
+    if t == "string" or t == "number" or t == "boolean" then return tostring(v) end
+    local ok, s = pcall(tostring, v)
+    if ok and s then return s end
+    return "<" .. t .. ">"
+end
+
+local function SafePCall(fn, ...)
+    if type(fn) ~= "function" then return nil end
+    local ok, a, b, c, d = pcall(fn, ...)
+    if ok then return a, b, c, d end
+    return nil
+end
+
+local function NormalizeCoord01(v)
+    local n = tonumber(v)
+    if n == nil then return nil end
+    if n > 1 then n = n / 100 end
+    return n
+end
+
+function ns:GetPlayerLocationDebug()
+    local info = {
+        mapID = nil,
+        x = nil,
+        y = nil,
+        zone = (GetZoneText and SafePCall(GetZoneText)) or nil,
+        subZone = (GetSubZoneText and SafePCall(GetSubZoneText)) or nil,
+        minimapZone = (GetMinimapZoneText and SafePCall(GetMinimapZoneText)) or nil,
+        realZone = (GetRealZoneText and SafePCall(GetRealZoneText)) or nil,
+    }
+
+    if C_Map and type(C_Map.GetBestMapForUnit) == "function" then
+        local mapID = SafePCall(C_Map.GetBestMapForUnit, "player")
+        if tonumber(mapID) then info.mapID = tonumber(mapID) end
+    end
+
+    if info.mapID and C_Map and type(C_Map.GetPlayerMapPosition) == "function" then
+        local pos = SafePCall(C_Map.GetPlayerMapPosition, info.mapID, "player")
+        if pos then
+            local x, y = pos.x, pos.y
+            if (x == nil or y == nil) and type(pos.GetXY) == "function" then
+                local ax, ay = SafePCall(pos.GetXY, pos)
+                x, y = ax, ay
+            end
+            if type(x) == "number" then info.x = x end
+            if type(y) == "number" then info.y = y end
+        end
+    end
+
+    return info
+end
+
+function ns:BuildDebugReport()
+    local lines = {}
+    local function add(s) lines[#lines + 1] = SafeToString(s) end
+
+    add("ForeverLevelingGuide debug export")
+    add("Addon: " .. SafeToString(self.ADDON_NAME) .. " v" .. SafeToString(self.VERSION) .. " (schema " .. SafeToString(self.SCHEMA) .. ")")
+    add("By: " .. SafeToString(self.BYLINE) .. "  Repo: " .. SafeToString(self.REPO))
+    add("Generated: " .. SafeToString(date and date("%Y-%m-%d %H:%M:%S") or "n/a"))
+
+    local buildVersion, buildNumber, buildDate, interfaceVersion
+    if type(GetBuildInfo) == "function" then
+        buildVersion, buildNumber, buildDate, interfaceVersion = SafePCall(GetBuildInfo)
+        if buildVersion == nil then
+            buildVersion, buildNumber, buildDate, interfaceVersion = GetBuildInfo()
+        end
+    end
+    if buildVersion or interfaceVersion then
+        add("Client: version=" .. SafeToString(buildVersion) .. " build=" .. SafeToString(buildNumber) .. " date=" .. SafeToString(buildDate) .. " interface=" .. SafeToString(interfaceVersion))
+    end
+    add("Locale: " .. SafeToString((GetLocale and SafePCall(GetLocale)) or "n/a"))
+
+    local faction = "?"
+    if UnitFactionGroup then faction = select(1, UnitFactionGroup("player")) or "?" end
+    local race = (UnitRace and select(1, UnitRace("player"))) or "?"
+    local className = (UnitClass and select(1, UnitClass("player"))) or "?"
+    local level = (UnitLevel and SafePCall(UnitLevel, "player")) or "?"
+    add("")
+    add("[Player]")
+    add("Faction: " .. SafeToString(faction) .. "  Race: " .. SafeToString(race) .. "  Class: " .. SafeToString(className) .. "  Level: " .. SafeToString(level))
+
+    local loc = self:GetPlayerLocationDebug() or {}
+    local function fmt01(v)
+        if type(v) ~= "number" then return "n/a" end
+        return string.format("%.4f (%.1f%%)", v, v * 100)
+    end
+    add("Zone: " .. SafeToString(loc.zone) .. " / " .. SafeToString(loc.subZone) .. " / " .. SafeToString(loc.minimapZone) .. " / " .. SafeToString(loc.realZone))
+    add("Map: " .. SafeToString(loc.mapID) .. "  X: " .. fmt01(loc.x) .. "  Y: " .. fmt01(loc.y))
+
+    local db = self.db
+    local charDB = self.charDB
+    local profile = self.profile
+    local keys = (self.GetSortedGuideKeys and self:GetSortedGuideKeys()) or {}
+    local guide, key = self:GetCurrentGuide()
+    local total = (guide and type(guide.steps) == "table" and #guide.steps) or 0
+    local idx = (charDB and tonumber(charDB.stepIndex)) or 1
+
+    add("")
+    add("[State]")
+    add("DB schema: " .. SafeToString(db and db._schema) .. "  DB version: " .. SafeToString(db and db._version))
+    add("Guides loaded: " .. SafeToString(#keys))
+    add("Current guide key: " .. SafeToString(key))
+    add("Step index: " .. SafeToString(idx) .. " / " .. SafeToString(total))
+    add("Settings: arrow=" .. SafeToString(profile and profile.showArrow) .. " autoAdvance=" .. SafeToString(profile and profile.autoAdvance) .. " announce=" .. SafeToString(profile and profile.announce) .. " locked=" .. SafeToString(profile and profile.locked))
+    if profile and profile.ui then
+        add("UI: shown=" .. SafeToString(profile.ui.shown) .. " point=" .. SafeToString(profile.ui.point) .. " relPoint=" .. SafeToString(profile.ui.relPoint) .. " x=" .. SafeToString(profile.ui.x) .. " y=" .. SafeToString(profile.ui.y) .. " w=" .. SafeToString(profile.ui.width) .. " h=" .. SafeToString(profile.ui.height))
+    end
+
+    if guide then
+        add("")
+        add("[Guide]")
+        add("Title: " .. SafeToString(guide.title or key))
+        add("Faction: " .. SafeToString(guide.faction) .. "  Range: " .. SafeToString(guide.minLevel) .. "-" .. SafeToString(guide.maxLevel) .. "  Scaffold: " .. SafeToString(guide.scaffold))
+        add("Chain next: " .. SafeToString(guide.next or guide.nextGuide or guide.nextKey))
+        add("Resolved next: " .. SafeToString(self.GetNextGuideKey and self:GetNextGuideKey() or nil))
+        add("Suggested: " .. SafeToString(self.GetSuggestedGuideKey and self:GetSuggestedGuideKey() or nil))
+    end
+
+    local step = nil
+    if guide and type(guide.steps) == "table" and idx >= 1 and idx <= total then
+        step = guide.steps[idx]
+    end
+    add("")
+    add("[Current Step]")
+    if not guide then
+        add("No guide loaded.")
+    elseif idx > total and total > 0 then
+        add("Guide complete (index past last step).")
+    elseif type(step) ~= "table" then
+        add("No active step.")
+    else
+        local stype = SafeToString(step.type or step.kind or "note")
+        local title = "Step"
+        if self.Engine and self.Engine.GetStepTitle then
+            title = self.Engine:GetStepTitle(step, idx)
+        else
+            title = step.title or step.name or step.text or step.desc or title
+        end
+        add("Index: " .. SafeToString(idx) .. "  Type: " .. stype .. "  Title: " .. SafeToString(title))
+        add("Quest: " .. SafeToString(step.quest or step.questID or step.questId or step.id))
+        add("Item: " .. SafeToString(step.item or step.itemID or step.itemId or step.itemName) .. "  Count: " .. SafeToString(step.count or step.amount or step.quantity or step.qty or step.need or step.required))
+        add("Level target: " .. SafeToString(step.level or step.toLevel or step.value or step.at or step.required))
+        add("NPC/Target: " .. SafeToString(step.npc or step.target or step.object or step.unit))
+        add("Zone: " .. SafeToString(step.zone or step.area or step.subzone))
+
+        local c = step.coords
+        if type(c) == "table" then
+            local mapID = c.mapID or c.mapId or c.map or c.uiMapID
+            local cx = c.x or c.X
+            local cy = c.y or c.Y
+            local nx = NormalizeCoord01(cx)
+            local ny = NormalizeCoord01(cy)
+            add("Coords: mapID=" .. SafeToString(mapID) .. " x=" .. SafeToString(cx) .. " y=" .. SafeToString(cy) .. " (normalized x=" .. SafeToString(nx) .. " y=" .. SafeToString(ny) .. ")")
+            add("Radius: " .. SafeToString(step.radius))
+            if self.Engine and self.Engine.IsPlayerNear then
+                local near = self.Engine:IsPlayerNear(step, step.radius or 0.03)
+                add("IsPlayerNear: " .. SafeToString(near))
+            end
+            if tonumber(mapID) and type(nx) == "number" and type(ny) == "number" and type(loc.mapID) == "number" and tonumber(mapID) ~= loc.mapID then
+                add("Note: step mapID differs from player's current mapID (arrival/arrow may be unavailable).")
+            end
+        else
+            add("Coords: none")
+        end
+
+        local note = step.note or step.desc or step.description
+        if note and note ~= "" then add("Note: " .. SafeToString(note)) end
+        local tip = step.tip
+        if tip and tip ~= "" then add("Tip: " .. SafeToString(tip)) end
+
+        if self.Engine and self.Engine.StepSatisfied then
+            local sat = self.Engine:StepSatisfied(step)
+            add("StepSatisfied (engine): " .. SafeToString(sat))
+        end
+        local completed = (charDB and type(charDB.completed) == "table" and charDB.completed[idx] == true) or false
+        local skipped = (charDB and type(charDB.skipped) == "table" and charDB.skipped[idx] == true) or false
+        add("Marked completed: " .. SafeToString(completed) .. "  Skipped: " .. SafeToString(skipped))
+    end
+
+    add("")
+    add("[Arrow]")
+    if self.Arrow then
+        local a = self.Arrow
+        add("Arrow enabled: " .. SafeToString(a.enabled) .. "  profile.showArrow: " .. SafeToString(profile and profile.showArrow))
+        if a.target then
+            add("Target: mapID=" .. SafeToString(a.target.mapID) .. " x=" .. SafeToString(a.target.x) .. " y=" .. SafeToString(a.target.y) .. " title=" .. SafeToString(a.target.title) .. " zone=" .. SafeToString(a.target.zone))
+        else
+            add("Target: none")
+        end
+        add("TomTom waypoint uid: " .. SafeToString(a._tomtomUid))
+    else
+        add("Arrow module not available.")
+    end
+
+    add("")
+    add("Hints: compare route flow relatively (pacing/zone order) to established leveling guides, but keep all step text/structure original and verify quest IDs/mapIDs/coords in-game on WoW Forever. Use /flg list, /flg continue, /flg suggest, and /reload after data changes.")
+
+    return table.concat(lines, "\n")
+end
+
+function ns:ShowDebugExport(text)
+    text = tostring(text or "")
+    self._lastDebugExport = text
+    if self.UI and self.UI.ShowExportDialog then
+        local ok = self.UI:ShowExportDialog(text, "ForeverLevelingGuide - Debug Export")
+        if ok then return true end
+    end
+    self:Print("Debug export prepared. UI dialog unavailable; text stored in addon memory (ns._lastDebugExport).")
+    return false
+end
+
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
@@ -421,6 +636,9 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
             ns:Print("No next guide available. Use /flg list.")
         end
     elseif cmd == "debug" then
+        local sub = tostring(rest or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+        local wantExport = (sub == "export" or sub == "copy" or sub == "full" or sub == "dump" or sub == "report")
+
         local guide, key = ns:GetCurrentGuide()
         local total = (guide and type(guide.steps) == "table" and #guide.steps) or 0
         local idx = (ns.charDB and tonumber(ns.charDB.stepIndex)) or 1
@@ -434,6 +652,7 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         local playerLevel = (UnitLevel and tonumber(UnitLevel("player"))) or "?"
         local faction = "?"
         if UnitFactionGroup then faction = select(1, UnitFactionGroup("player")) or "?" end
+
         ns:Print("Debug - " .. tostring(ns.ADDON_NAME) .. " v" .. tostring(ns.VERSION) .. " (schema " .. tostring(ns.SCHEMA) .. ")")
         ns:Print("Player: " .. tostring(faction) .. " level " .. tostring(playerLevel))
         ns:Print("Guide: " .. tostring(key or "none") .. " | step " .. tostring(idx) .. "/" .. tostring(total) .. " | type: " .. stepType)
@@ -441,11 +660,47 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("Guides loaded: " .. tostring(#ns:GetSortedGuideKeys()))
         if guide and guide.title then ns:Print("Current title: " .. tostring(guide.title)) end
         if guide and guide.scaffold then ns:Print("Note: this is an original scaffold route (WIP). Verify and expand steps for your WoW Forever build.") end
+
         local nextKey = ns.GetNextGuideKey and ns:GetNextGuideKey() or nil
         local suggested = ns:GetSuggestedGuideKey and ns:GetSuggestedGuideKey() or nil
         if guide and guide.next then ns:Print("Guide chain next: " .. tostring(guide.next)) end
         if nextKey then ns:Print("Resolved next: " .. tostring(nextKey)) end
         if suggested and suggested ~= nextKey then ns:Print("Suggested: " .. tostring(suggested)) end
+
+        if ns.GetPlayerLocationDebug then
+            local loc = ns:GetPlayerLocationDebug()
+            if loc then
+                local xTxt = (type(loc.x) == "number") and string.format("%.1f%%", loc.x * 100) or "n/a"
+                local yTxt = (type(loc.y) == "number") and string.format("%.1f%%", loc.y * 100) or "n/a"
+                ns:Print("Location: map=" .. tostring(loc.mapID) .. " x=" .. xTxt .. " y=" .. yTxt .. " zone=" .. tostring(loc.zone or "n/a"))
+            end
+        end
+
+        if type(step) == "table" and ns.Engine then
+            local coords = step.coords
+            local satisfied = (ns.Engine.StepSatisfied and ns.Engine:StepSatisfied(step)) and true or false
+            local near = false
+            if type(coords) == "table" and ns.Engine.IsPlayerNear then
+                near = ns.Engine:IsPlayerNear(step, step.radius or 0.03) and true or false
+            end
+            ns:Print("Step state: satisfied=" .. tostring(satisfied) .. " near=" .. tostring(near))
+            if type(coords) == "table" then
+                ns:Print("Step coords: mapID=" .. tostring(coords.mapID or coords.mapId or coords.map or coords.uiMapID) .. " x=" .. tostring(coords.x or coords.X) .. " y=" .. tostring(coords.y or coords.Y) .. " radius=" .. tostring(step.radius or "default"))
+            end
+        end
+
+        if wantExport and ns.BuildDebugReport then
+            local report = ns:BuildDebugReport()
+            if ns.ShowDebugExport then
+                ns:ShowDebugExport(report)
+                ns:Print("Debug export: copyable report opened (or stored if UI unavailable). Use it to speed up in-game verification/tuning on WoW Forever.")
+            else
+                ns._lastDebugExport = report
+                ns:Print("Debug export prepared in ns._lastDebugExport.")
+            end
+        else
+            ns:Print("Tip: /flg debug export - open a copyable full report for WoW Forever verification/tuning.")
+        end
     elseif cmd == "help" or cmd == "?" then
         ns:Print("ForeverLevelingGuide " .. ns.BYLINE .. " (v" .. ns.VERSION .. ")")
         ns:Print("Commands:")
@@ -460,7 +715,8 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("  /flg where         - print current guide/step")
         ns:Print("  /flg suggest       - suggest a next guide for your level/faction")
         ns:Print("  /flg continue      - load the next/suggested guide")
-        ns:Print("  /flg debug         - diagnostics")
+        ns:Print("  /flg debug         - diagnostics summary")
+        ns:Print("  /flg debug export  - copyable full debug report (verification/tuning)")
         ns:Print("Aliases: /levelguide, /journey, /jf")
     else
         ns:Print("Unknown command: " .. tostring(cmd) .. ". Try /flg help")

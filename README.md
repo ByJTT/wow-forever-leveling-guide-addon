@@ -56,7 +56,8 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 /flg auto               toggle auto-advance
 /flg announce           toggle chat announcements
 /flg where              print current guide/step in chat
-/flg debug              print addon state/diagnostics
+/flg debug              print addon state/diagnostics summary
+/flg debug export       open a copyable full debug report (verification/tuning)
 /flg help               show commands
 ```
 
@@ -122,7 +123,13 @@ ns:RegisterGuide("my_guide_key", {
 - **Addon not listed:** confirm the folder is named `ForeverLevelingGuide` and contains `ForeverLevelingGuide.toc`. Enable "Load out of date AddOns" if needed, then `/reload`.
 - **No guide/steps:** run `/flg list` and `/flg load <key>`. Use `/flg debug` to check loaded state.
 - **Arrow/coords off:** `mapID`/coords are client-specific; adjust the step's `coords` or use `/flg next|skip` to proceed.
-- **Auto-advance not triggering:** APIs differ across clients; use manual controls and report with `/flg debug`, client/build, steps, expected/actual behavior (no account data).
+- **Auto-advance not triggering:** APIs differ across clients; use manual controls and report with `/flg debug export` (copyable report with client/build, guide/step, map/coords, and state), plus steps and expected/actual behavior (no account data).
+
+## Authoring & verification tooling (offline)
+
+- **Guide data validator:** `python tools/validate_guides.py [project_root]` - lightweight offline checks for structural issues, guide/chain integrity, TOC/data coverage, and common field/coord/step-shape problems (without in-game validation). Use it after editing `Data/*.lua` or scaffolds to catch mistakes before `/reload` and in-game verification.
+- **In-game debug export:** `/flg debug export` opens a copyable report (client/build, player/map/zone/coords, guide/step state, arrow/target/satisfaction/nearby info) to speed up WoW Forever verification and tuning.
+- **Route policy:** when comparing to established leveling guides, use only high-level pacing/zone/flow as relative reference and keep all route text/structure original/clean-room. Verify quest IDs, `mapID`s, coordinates, NPCs, and chains in-game on WoW Forever (no guessed real in-game data).
 
 ## Versioning & releases
 
