@@ -1,0 +1,23 @@
+## Interface: 16001, 30300
+## Title: WoW Forever Leveling Guide Addon ByJTT
+## Notes: Free, data-driven leveling guide for WoW Forever. Step viewer, navigation arrow, progress tracking. /flg | by ByJTT
+## Author: ByJTT
+## Version: 0.1.0
+## SavedVariables: ForeverLevelingGuideDB
+## X-Category: Quests & Leveling
+## X-License: MIT
+## X-Website: https://github.com/ByJTT/wow-forever-leveling-guide-addon
+## X-ByJTT-Repo: wow-forever-leveling-guide-addon
+## X-ByJTT-Web: https://byjtt.com
+## X-ByJTT-Support: https://buymeacoffee.com/ByJTT
+
+Core.lua
+GuideEngine.lua
+Tracker.lua
+Arrow.lua
+UI.lua
+Data\Guides.lua
+Data\Horde_01_10_Durotar.lua
+Data\Alliance_01_10_Elwynn.lua
+Data\Scaffolds_Horde.lua
+Data\Scaffolds_Alliance.lua

@@ -1,0 +1,42 @@
+name: Bug report
+description: Report a problem (ByJTT / Forever Leveling Guide)
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep reports specific. Do not include personal/account data.
+  - type: input
+    id: version
+    attributes:
+      label: Addon version
+      placeholder: "v0.1.0 (from /flg debug)"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: Expected vs actual behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. /flg load horde_01_10_durotar
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: debug
+    attributes:
+      label: /flg debug and /flg where output and Lua errors
+      description: Paste `/flg debug` and `/flg where` (if relevant). If applicable, enable `/console scriptErrors 1` and include the Lua error/stack. Do not include account data or local personal paths.
+      render: text
+  - type: input
+    id: client
+    attributes:
+      label: Client
+      placeholder: "WoW Forever (interface/build if known)"

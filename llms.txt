@@ -1,0 +1,20 @@
+# wow-forever-leveling-guide-addon - WoW Forever Leveling Guide Addon ByJTT
+
+> Free, minimal, data-driven leveling guide for World of Warcraft: Forever. By ByJTT (solo studio).
+
+- Repo: https://github.com/ByJTT/wow-forever-leveling-guide-addon
+- Display name (TOC Title, "AddonName ByJTT" style): `WoW Forever Leveling Guide Addon ByJTT`
+- In-game addon folder name (critical, must remain stable): `ForeverLevelingGuide`
+- Purpose: step-by-step leveling guide panel with navigation arrow and progress tracking; in-panel guide picker; extensible Lua route data. Guidance UI only (no gameplay automation).
+- Target: World of Warcraft: Forever (Interface 16001, 30300). Feature-detected API fallbacks. No Ace/framework deps.
+- Install path: `<WoW Forever>/Interface/AddOns/ForeverLevelingGuide/ForeverLevelingGuide.toc`
+- Required in-game files: `ForeverLevelingGuide.toc`, `Core.lua`, `GuideEngine.lua`, `Tracker.lua`, `Arrow.lua`, `UI.lua`, `Data/Guides.lua`, and route files in `Data/` listed in TOC.
+- Commands: `/flg show|hide|toggle|list|load <key>|next|prev|skip|reset|arrow|auto|announce|where|suggest|debug|help` (aliases: `/levelguide`, `/journey`, `/jf`). UI includes a **Guides** picker button.
+- Routes: bundled 1-10 starter samples plus original 10-60 scaffold guides (Horde/Alliance, `scaffold=true`, WIP placeholders). Engine supports broad step type/field aliases (quest, travel/path/coords arrival, level, collect/item, manual/info) with best-effort auto-advance.
+- Guide flow: level/faction-aware auto-selection, `/flg suggest` and guide-complete next suggestions, navigation arrow, optional best-effort TomTom waypoint integration when installed (no dependency).
+- SavedVariables: `ForeverLevelingGuideDB` (schema-versioned, per-character progress/profile).
+- Safety: UI/route helper only - no gameplay automation, no protected/secure actions. All route content and engine logic must remain original/open.
+- Branding/support (public): by ByJTT - https://byjtt.com - https://github.com/ByJTT - Support placeholder: https://buymeacoffee.com/ByJTT (replace with real URL when ready).
+- Issues: include WoW Forever build/interface, addon version (`/flg debug`), guide key/step, steps, expected/actual, Lua errors (`/console scriptErrors 1`). No account data/local personal paths.
+- License: MIT.
+- See also: `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`.

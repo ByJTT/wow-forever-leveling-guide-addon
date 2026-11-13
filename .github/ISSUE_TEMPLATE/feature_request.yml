@@ -1,0 +1,29 @@
+name: Feature request
+description: Suggest a small, focused improvement
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This addon stays intentionally lightweight, free/open, and safe-by-default. Features should be high value and low complexity.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem would this solve (e.g. guide data, navigation, UX, task types)?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: Keep it concrete and minimal.
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      options:
+        - label: This keeps the addon lightweight, guidance-only, and compatible with WoW Forever.
+          required: true
