@@ -31,7 +31,7 @@
 
 - Refined 10-60 Horde/Alliance scaffold routes for clearer bracket flow (relative to established guide pacing/zone order), added structured checkpoints/train/goto/transition steps, and chained scaffolds with `next`.
 - Linked starter 1-10 routes to 10-20 scaffolds and updated completion guidance to use `/flg continue`.
-- Added/kept guide-chain support in core/UI flow (`GetNextGuideKey`, `/flg continue`, next-guide suggestions in debug/UI/complete states) and ensured manual next/skip completion announces/suggests the next guide at end-of-guide.
+- Added/kept guide-chain support in core/UI flow (`GetNextGuideKey`, `/flg continue`, next-guide suggestions in debug/UI/complete states), ensured manual next/skip completion announces/suggests the next guide at end-of-guide, and made end-of-guide Next/`/flg next` continue into the next/suggested guide when available (UI Continue button + engine behavior).
 - Updated `README.md`, `CHANGELOG.md`, `AGENTS.md`, and `llms.txt` to document chaining/continue and the relative-comparison, original/clean-room scaffold policy.
 - Added `.luarc.json` for WoW Lua diagnostics/globals.
 

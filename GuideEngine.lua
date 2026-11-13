@@ -158,7 +158,12 @@ function Engine:NextStep(reason)
 
     if total == 0 then return end
     if idx > total then
-        ns:RefreshUI()
+        local nk = (ns.GetNextGuideKey and ns:GetNextGuideKey()) or (ns.GetSuggestedGuideKey and ns:GetSuggestedGuideKey()) or nil
+        if nk and ns.SetGuide then
+            ns:SetGuide(nk)
+        else
+            ns:RefreshUI()
+        end
         return
     end
 

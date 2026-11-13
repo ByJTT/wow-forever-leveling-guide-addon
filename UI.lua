@@ -105,7 +105,7 @@ local function StepToLines(step, idx, total)
 
     local lines = {}
     if idx and total then
-        lines[#lines + 1] = "|cff888888Step " .. tostring(idx) .. " of " .. tostring(total) .. " • " .. label .. "|r"
+        lines[#lines + 1] = "|cff888888Step " .. tostring(idx) .. " of " .. tostring(total) .. " - " .. label .. "|r"
     end
     lines[#lines + 1] = "|cffffd100" .. tostring(title) .. "|r"
 
@@ -173,7 +173,7 @@ local function StepToLines(step, idx, total)
     end
 
     lines[#lines + 1] = ""
-    lines[#lines + 1] = "|cffaaaaaa/flg prev • /flg next • /flg skip • /flg list|r"
+    lines[#lines + 1] = "|cffaaaaaa/flg prev - /flg next - /flg skip - /flg list|r"
     return table.concat(lines, "\n")
 end
 
@@ -402,10 +402,21 @@ function UI:Create()
     end
 
     frame.prevBtn = MakeButton("Prev", 52, 12, function() if ns.Engine and ns.Engine.PrevStep then ns.Engine:PrevStep() end end)
-    frame.nextBtn = MakeButton("Next", 52, 68, function() if ns.Engine and ns.Engine.NextStep then ns.Engine:NextStep("manual") end end)
-    frame.skipBtn = MakeButton("Skip", 52, 124, function() if ns.Engine and ns.Engine.SkipStep then ns.Engine:SkipStep() end end)
-    frame.resetBtn = MakeButton("Reset", 52, 180, function() if ns.Engine and ns.Engine.ResetProgress then ns.Engine:ResetProgress() end end)
-    frame.guidesBtn = MakeButton("Guides", 58, 236, function() ToggleGuidePicker(frame.guidesBtn) end)
+    frame.nextBtn = MakeButton("Next", 64, 68, function()
+        local guide = ns:GetCurrentGuide()
+        local steps = (guide and type(guide.steps) == "table") and guide.steps or {}
+        local total = #steps
+        local idx = (ns.charDB and tonumber(ns.charDB.stepIndex)) or 1
+        if total > 0 and idx > total then
+            local nk = (ns.GetNextGuideKey and ns:GetNextGuideKey()) or (ns.GetSuggestedGuideKey and ns:GetSuggestedGuideKey()) or nil
+            if nk and ns.SetGuide then ns:SetGuide(nk) end
+        else
+            if ns.Engine and ns.Engine.NextStep then ns.Engine:NextStep("manual") end
+        end
+    end)
+    frame.skipBtn = MakeButton("Skip", 52, 136, function() if ns.Engine and ns.Engine.SkipStep then ns.Engine:SkipStep() end end)
+    frame.resetBtn = MakeButton("Reset", 52, 192, function() if ns.Engine and ns.Engine.ResetProgress then ns.Engine:ResetProgress() end end)
+    frame.guidesBtn = MakeButton("Guides", 58, 248, function() ToggleGuidePicker(frame.guidesBtn) end)
 
     local lock = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
     lock:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 6)
@@ -478,6 +489,7 @@ function UI:Refresh()
         frame.body:SetWidth(scrollWidth)
         frame.body:SetText("No guide loaded.\n\nUse the |cffffd100Guides|r button below, |cffffd100/flg list|r, or |cffffd100/flg load <key>|r to load one.\n\nExamples:\n- /flg load horde_01_10_durotar\n- /flg load alliance_01_10_elwynn\n\nForeverLevelingGuide by ByJTT - free, open, and extensible.")
         frame.content:SetHeight(math.max(120, frame.body:GetStringHeight() + 12))
+        if frame.nextBtn and frame.nextBtn.SetText then frame.nextBtn:SetText("Next") end
         SetButtonEnabled(frame.prevBtn, false)
         SetButtonEnabled(frame.nextBtn, false)
         SetButtonEnabled(frame.skipBtn, false)
@@ -504,22 +516,29 @@ function UI:Refresh()
     if #meta > 0 then subtitle = subtitle .. " |cff888888(" .. table.concat(meta, ", ") .. ")|r" end
     frame.subtitle:SetText(subtitle)
 
+    local continueKey = nil
     local text
     if total == 0 then
         text = "|cffffcc00This guide has no steps yet.|r\n\nAdd steps in its Data/*.lua file and /reload.\nSee README for the route format and scaffold examples."
     elseif atEnd then
-        local msg = "You reached the end of:\n|cffffd100" .. tostring(guide.title or key or "Guide") .. "|r\n\nUse |cffffd100/flg continue|r to load the next guide, |cffffd100Guides|r/|cffffd100/flg list|r to choose another, or |cffffd100/flg reset|r to replay this one."
-        local suggested = ns.GetSuggestedGuideKey and ns:GetSuggestedGuideKey() or nil
-        if suggested then
-            local sg = (ns.GetGuide and ns:GetGuide(suggested)) or (ns.Guides and ns.Guides[suggested]) or {}
-            local sTitle = sg.title or suggested
+        continueKey = (ns.GetNextGuideKey and ns:GetNextGuideKey()) or (ns.GetSuggestedGuideKey and ns:GetSuggestedGuideKey()) or nil
+        local continueHint
+        if continueKey then
+            continueHint = "Use |cffffd100/flg continue|r or click |cffffd100Continue|r to load the next guide"
+        else
+            continueHint = "No next guide chained or suggested. Use |cffffd100Guides|r or |cffffd100/flg list|r to choose another guide"
+        end
+        local msg = "You reached the end of:\n|cffffd100" .. tostring(guide.title or key or "Guide") .. "|r\n\n" .. continueHint .. ", or |cffffd100/flg reset|r to replay this one."
+        if continueKey then
+            local sg = (ns.GetGuide and ns:GetGuide(continueKey)) or (ns.Guides and ns.Guides[continueKey]) or {}
+            local sTitle = sg.title or continueKey
             local sMeta = {}
             if sg.minLevel and sg.maxLevel then sMeta[#sMeta + 1] = tostring(sg.minLevel) .. "-" .. tostring(sg.maxLevel) end
             if sg.scaffold then sMeta[#sMeta + 1] = "scaffold/WIP" end
             local suffix = (#sMeta > 0) and (" |cff888888(" .. table.concat(sMeta, ", ") .. ")|r") or ""
-            local chained = guide and (guide.next == suggested or guide.nextGuide == suggested or guide.nextKey == suggested)
+            local chained = guide and (guide.next == continueKey or guide.nextGuide == continueKey or guide.nextKey == continueKey)
             local label = chained and "Next guide" or "Suggested next"
-            msg = msg .. "\n\n|cff4dd0ff" .. label .. ":|r " .. tostring(sTitle) .. suffix .. "\n|cff666666" .. tostring(suggested) .. "|r\nUse: |cffffd100/flg continue|r (or /flg load " .. tostring(suggested) .. ")"
+            msg = msg .. "\n\n|cff4dd0ff" .. label .. ":|r " .. tostring(sTitle) .. suffix .. "\n|cff666666" .. tostring(continueKey) .. "|r\nUse: |cffffd100/flg continue|r or click |cffffd100Continue|r (or /flg load " .. tostring(continueKey) .. ")"
         end
         text = "|cff88ff88Guide complete!|r\n\n" .. msg
     else
@@ -533,8 +552,16 @@ function UI:Refresh()
     frame.content:SetWidth(scrollWidth)
     frame.content:SetHeight(math.max(100, textHeight + 14))
 
+    if atEnd and total > 0 then
+        if frame.nextBtn and frame.nextBtn.SetText then
+            frame.nextBtn:SetText(continueKey and "Continue" or "Next")
+        end
+    else
+        if frame.nextBtn and frame.nextBtn.SetText then frame.nextBtn:SetText("Next") end
+    end
+
     SetButtonEnabled(frame.prevBtn, idx > 1)
-    SetButtonEnabled(frame.nextBtn, total > 0 and not atEnd)
+    SetButtonEnabled(frame.nextBtn, (total > 0 and not atEnd) or (atEnd and continueKey ~= nil))
     SetButtonEnabled(frame.skipBtn, total > 0 and not atEnd)
     SetButtonEnabled(frame.resetBtn, total > 0)
     SetButtonEnabled(frame.guidesBtn, true)
