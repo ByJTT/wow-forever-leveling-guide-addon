@@ -260,7 +260,36 @@ function ns:AutoSelectGuide()
     return false
 end
 
+function ns:GetNextGuideKey()
+    local guide, currentKey = self:GetCurrentGuide()
+    if type(guide) ~= "table" then return nil end
+    local nextKey = guide.next or guide.nextGuide or guide.nextKey
+    if type(nextKey) ~= "string" or nextKey == "" or nextKey == currentKey then return nil end
+
+    local resolved = nextKey
+    local nextGuide = self:GetGuide(resolved)
+    if not nextGuide then
+        local lower = nextKey:lower()
+        if self:GetGuide(lower) then
+            resolved = lower
+            nextGuide = self:GetGuide(resolved)
+        end
+    end
+    if type(nextGuide) ~= "table" then return nil end
+
+    local pfaction
+    if UnitFactionGroup then pfaction = select(1, UnitFactionGroup("player")) end
+    local gf = tostring(nextGuide.faction or "Neutral")
+    if not ((gf == "Neutral") or (pfaction == nil) or (gf == pfaction)) then
+        return nil
+    end
+    return resolved
+end
+
 function ns:GetSuggestedGuideKey()
+    local chained = self:GetNextGuideKey()
+    if chained then return chained end
+
     local guide, currentKey = self:GetCurrentGuide()
     local faction = guide and guide.faction
     if not faction and UnitFactionGroup then
@@ -305,10 +334,13 @@ function ns:PrintSuggestedGuide(prefix)
     if not key then return false end
     local g = self:GetGuide(key)
     local title = (g and g.title) or key
-    local msg = "Suggested next: " .. title .. " |cff666666[" .. key .. "]|r"
+    local guide, _ = self:GetCurrentGuide()
+    local chained = guide and (guide.next == key or guide.nextGuide == key or guide.nextKey == key)
+    local label = chained and "Next guide" or "Suggested next"
+    local msg = label .. ": " .. title .. " |cff666666[" .. key .. "]|r"
     if g and g.scaffold then msg = msg .. " |cff888888(scaffold/WIP)|r" end
     if prefix and prefix ~= "" then msg = tostring(prefix) .. " " .. msg end
-    self:Print(msg .. "  Use: /flg load " .. key)
+    self:Print(msg .. "  Use: /flg continue (or /flg load " .. key .. ")")
     return true
 end
 
@@ -377,9 +409,16 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("Chat announcements: " .. (ns.profile.announce and "|cff88ff88ON|r" or "|cffff8888OFF|r"))
     elseif cmd == "where" or cmd == "status" or cmd == "current" then
         if ns.UI and ns.UI.PrintStatus then ns.UI:PrintStatus() end
-    elseif cmd == "suggest" or cmd == "nextguide" then
+    elseif cmd == "suggest" then
         if not ns:PrintSuggestedGuide() then
             ns:Print("No suggested next guide found. Use /flg list.")
+        end
+    elseif cmd == "continue" or cmd == "cont" or cmd == "nextguide" then
+        local nextKey = (ns.GetNextGuideKey and ns:GetNextGuideKey()) or (ns.GetSuggestedGuideKey and ns:GetSuggestedGuideKey()) or nil
+        if nextKey then
+            ns:SetGuide(nextKey)
+        else
+            ns:Print("No next guide available. Use /flg list.")
         end
     elseif cmd == "debug" then
         local guide, key = ns:GetCurrentGuide()
@@ -402,8 +441,11 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("Guides loaded: " .. tostring(#ns:GetSortedGuideKeys()))
         if guide and guide.title then ns:Print("Current title: " .. tostring(guide.title)) end
         if guide and guide.scaffold then ns:Print("Note: this is an original scaffold route (WIP). Verify and expand steps for your WoW Forever build.") end
-        local suggested = ns:GetSuggestedGuideKey()
-        if suggested then ns:Print("Suggested next: " .. tostring(suggested)) end
+        local nextKey = ns.GetNextGuideKey and ns:GetNextGuideKey() or nil
+        local suggested = ns:GetSuggestedGuideKey and ns:GetSuggestedGuideKey() or nil
+        if guide and guide.next then ns:Print("Guide chain next: " .. tostring(guide.next)) end
+        if nextKey then ns:Print("Resolved next: " .. tostring(nextKey)) end
+        if suggested and suggested ~= nextKey then ns:Print("Suggested: " .. tostring(suggested)) end
     elseif cmd == "help" or cmd == "?" then
         ns:Print("ForeverLevelingGuide " .. ns.BYLINE .. " (v" .. ns.VERSION .. ")")
         ns:Print("Commands:")
@@ -417,6 +459,7 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("  /flg announce      - toggle chat announcements")
         ns:Print("  /flg where         - print current guide/step")
         ns:Print("  /flg suggest       - suggest a next guide for your level/faction")
+        ns:Print("  /flg continue      - load the next/suggested guide")
         ns:Print("  /flg debug         - diagnostics")
         ns:Print("Aliases: /levelguide, /journey, /jf")
     else

@@ -9,7 +9,7 @@
 - **Step-by-step guide panel** - current step details (type, quest/NPC/zone/coords/notes/tips), progress counter, in-panel **Guides** picker, and Prev/Next/Skip/Reset controls.
 - **Navigation arrow** - follows the current step's map coordinates when available (best-effort, client/API dependent), and hides when no valid target/step is available. Optional best-effort TomTom waypoint integration when TomTom is installed (no dependency).
 - **Auto-advance (best effort)** - detects quest accept/complete/turn-in, level-ups, item collection, and arrival at travel steps; manual controls always available.
-- **Smart guide flow** - level/faction-aware guide auto-selection, scaffold labeling, guide-complete suggestions, and `/flg suggest` for a recommended next route.
+- **Smart guide flow** - level/faction-aware guide auto-selection, guide chaining (`next`) with `/flg continue`, scaffold labeling, guide-complete suggestions, and `/flg suggest` for a recommended next route.
 - **Per-character progress** - saved guide selection and step progress via `ForeverLevelingGuideDB` (schema-versioned).
 - **Extensible route format** - drop-in Lua guide modules in `Data/` registered with `ns:RegisterGuide(...)`.
 - **Bundled free routes (original/open)** - sample 1-10 starter guides plus 10-60 scaffold routes (WIP placeholders) to provide a complete, extensible foundation for in-game-verified route authoring.
@@ -50,11 +50,12 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 /flg load <key>         load a guide (e.g. horde_01_10_durotar)
 /flg next|prev|skip     navigate steps manually
 /flg reset              reset progress for the current character/guide
+/flg continue           load the next/suggested guide (guide chain or best match)
+/flg suggest            suggest a next guide for your level/faction
 /flg arrow              toggle navigation arrow
 /flg auto               toggle auto-advance
 /flg announce           toggle chat announcements
 /flg where              print current guide/step in chat
-/flg suggest            suggest a next guide for your level/faction
 /flg debug              print addon state/diagnostics
 /flg help               show commands
 ```
@@ -73,7 +74,7 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 - Horde: `horde_10_20_barrens_stonetalon_scaffold`, `horde_20_30_ashenvale_thousand_needles_scaffold`, `horde_30_40_stranglethorn_arathi_desolace_scaffold`, `horde_40_50_tanaris_feralas_hinterlands_scaffold`, `horde_50_60_ungoro_felwood_burning_steppes_scaffold`
 - Alliance: `alliance_10_20_westfall_loch_modan_darkshore_scaffold`, `alliance_20_30_duskwood_redridge_wetlands_scaffold`, `alliance_30_40_stranglethorn_arathi_desolace_scaffold`, `alliance_40_50_tanaris_feralas_hinterlands_scaffold`, `alliance_50_60_ungoro_felwood_burning_steppes_scaffold`
 
-> Bundled 1-10 routes are starter samples and scaffold routes are intentionally minimal placeholders (labeled as scaffolds/WIP). Quest IDs, `mapID`, and coords must be verified/tuned for your WoW Forever client/build - contributions welcome. All bundled route content and engine code are original/open (no proprietary guides or code copied).
+> Bundled 1-10 routes are starter samples and scaffold routes are structured, chained placeholders (labeled as scaffolds/WIP) with bracket progression compared at a high level to established leveling-guide flow for pacing and zone order, but with original/clean-room step text and structure. Quest IDs, `mapID`, and coords must be verified/tuned for your WoW Forever client/build - contributions welcome. All bundled route content and engine code are original/open (no proprietary guides or code copied).
 
 ## Creating your own guide
 
@@ -113,7 +114,7 @@ ns:RegisterGuide("my_guide_key", {
 
 - **WoW Forever target:** Interface `16001, 30300` with best-effort API fallbacks. Quest/map APIs and `mapID` values can vary by client/build - verify routes in-game and adjust as needed.
 - **Guidance only:** this addon provides a UI/route helper (no gameplay automation, no protected/combat-secure actions).
-- **Routes are open & original:** bundled 1-10 guides are samples and 10-60 guides are scaffolds/WIP; comprehensive, tuned routes are community/extensible and must be verified on WoW Forever.
+- **Routes are open & original:** bundled 1-10 guides are samples and 10-60 guides are chained scaffolds/WIP; bracket/zone flow is compared at a high level to established leveling guides for pacing, but all step text/structure is original/clean-room. Comprehensive, tuned routes are community/extensible and must be verified on WoW Forever.
 - **Optional waypoint integration:** if TomTom is installed, the addon can set a best-effort waypoint for the current step target (no dependency required). Native arrow behavior remains best-effort and client/API dependent.
 
 ## Troubleshooting

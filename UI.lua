@@ -508,7 +508,7 @@ function UI:Refresh()
     if total == 0 then
         text = "|cffffcc00This guide has no steps yet.|r\n\nAdd steps in its Data/*.lua file and /reload.\nSee README for the route format and scaffold examples."
     elseif atEnd then
-        local msg = "You reached the end of:\n|cffffd100" .. tostring(guide.title or key or "Guide") .. "|r\n\nUse |cffffd100/flg list|r or |cffffd100Guides|r to load another guide, or |cffffd100/flg reset|r to replay this one."
+        local msg = "You reached the end of:\n|cffffd100" .. tostring(guide.title or key or "Guide") .. "|r\n\nUse |cffffd100/flg continue|r to load the next guide, |cffffd100Guides|r/|cffffd100/flg list|r to choose another, or |cffffd100/flg reset|r to replay this one."
         local suggested = ns.GetSuggestedGuideKey and ns:GetSuggestedGuideKey() or nil
         if suggested then
             local sg = (ns.GetGuide and ns:GetGuide(suggested)) or (ns.Guides and ns.Guides[suggested]) or {}
@@ -517,7 +517,9 @@ function UI:Refresh()
             if sg.minLevel and sg.maxLevel then sMeta[#sMeta + 1] = tostring(sg.minLevel) .. "-" .. tostring(sg.maxLevel) end
             if sg.scaffold then sMeta[#sMeta + 1] = "scaffold/WIP" end
             local suffix = (#sMeta > 0) and (" |cff888888(" .. table.concat(sMeta, ", ") .. ")|r") or ""
-            msg = msg .. "\n\n|cff4dd0ffSuggested next:|r " .. tostring(sTitle) .. suffix .. "\n|cff666666" .. tostring(suggested) .. "|r\nUse: |cffffd100/flg load " .. tostring(suggested) .. "|r"
+            local chained = guide and (guide.next == suggested or guide.nextGuide == suggested or guide.nextKey == suggested)
+            local label = chained and "Next guide" or "Suggested next"
+            msg = msg .. "\n\n|cff4dd0ff" .. label .. ":|r " .. tostring(sTitle) .. suffix .. "\n|cff666666" .. tostring(suggested) .. "|r\nUse: |cffffd100/flg continue|r (or /flg load " .. tostring(suggested) .. ")"
         end
         text = "|cff88ff88Guide complete!|r\n\n" .. msg
     else

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://raw.githubusercontent.com/LuaLS/vscode-lua/master/setting/schema.json",
+  "runtime": {
+    "version": "Lua 5.1"
+  },
+  "workspace": {
+    "library": [],
+    "checkThirdParty": false
+  },
+  "diagnostics": {
+    "globals": [
+      "ADDON_LOADED",
+      "BackdropTemplateMixin",
+      "C_Item",
+      "C_Map",
+      "C_QuestLog",
+      "C_Timer",
+      "CreateFrame",
+      "DEFAULT_CHAT_FRAME",
+      "ForeverLevelingGuideDB",
+      "GameFontHighlight",
+      "GameFontHighlightSmall",
+      "GameFontNormalLarge",
+      "GetItemCount",
+      "GetQuestLogIndexByID",
+      "GetRealmName",
+      "IsQuestComplete",
+      "IsQuestFlaggedCompleted",
+      "IsQuestObjectivesComplete",
+      "SlashCmdList",
+      "SLASH_FOREVERLEVELINGGUIDE1",
+      "SLASH_FOREVERLEVELINGGUIDE2",
+      "SLASH_FOREVERLEVELINGGUIDE3",
+      "SLASH_FOREVERLEVELINGGUIDE4",
+      "UIParent",
+      "UIPanelButtonTemplate",
+      "UIPanelCloseButton",
+      "UIPanelScrollFrameTemplate",
+      "UICheckButtonTemplate",
+      "UnitFactionGroup",
+      "UnitLevel",
+      "UnitName"
+    ],
+    "disable": [
+      "lowercase-global",
+      "undefined-field"
+    ]
+  },
+  "completion": {
+    "callSnippet": "Disable"
+  },
+  "telemetry": {
+    "enable": false
+  }
+}

@@ -9,9 +9,9 @@
 - Target: World of Warcraft: Forever (Interface 16001, 30300). Feature-detected API fallbacks. No Ace/framework deps.
 - Install path: `<WoW Forever>/Interface/AddOns/ForeverLevelingGuide/ForeverLevelingGuide.toc`
 - Required in-game files: `ForeverLevelingGuide.toc`, `Core.lua`, `GuideEngine.lua`, `Tracker.lua`, `Arrow.lua`, `UI.lua`, `Data/Guides.lua`, and route files in `Data/` listed in TOC.
-- Commands: `/flg show|hide|toggle|list|load <key>|next|prev|skip|reset|arrow|auto|announce|where|suggest|debug|help` (aliases: `/levelguide`, `/journey`, `/jf`). UI includes a **Guides** picker button.
-- Routes: bundled 1-10 starter samples plus original 10-60 scaffold guides (Horde/Alliance, `scaffold=true`, WIP placeholders). Engine supports broad step type/field aliases (quest, travel/path/coords arrival, level, collect/item, manual/info) with best-effort auto-advance.
-- Guide flow: level/faction-aware auto-selection, `/flg suggest` and guide-complete next suggestions, navigation arrow, optional best-effort TomTom waypoint integration when installed (no dependency).
+- Commands: `/flg show|hide|toggle|list|load <key>|next|prev|skip|reset|continue|suggest|arrow|auto|announce|where|debug|help` (aliases: `/levelguide`, `/journey`, `/jf`). UI includes a **Guides** picker button.
+- Routes: bundled 1-10 starter samples plus original 10-60 chained scaffold guides (Horde/Alliance, `scaffold=true`, WIP placeholders, `next` links). Engine supports broad step type/field aliases (quest, travel/path/coords arrival, level, collect/item, manual/info) with best-effort auto-advance.
+- Guide flow: level/faction-aware auto-selection, guide chaining (`next`) with `/flg continue`, `/flg suggest` and guide-complete next suggestions, navigation arrow, optional best-effort TomTom waypoint integration when installed (no dependency). Scaffold bracket/zone flow compared at a high level to established guides for pacing; step text/structure original/clean-room.
 - SavedVariables: `ForeverLevelingGuideDB` (schema-versioned, per-character progress/profile).
 - Safety: UI/route helper only - no gameplay automation, no protected/secure actions. All route content and engine logic must remain original/open.
 - Branding/support (public): by ByJTT - https://byjtt.com - https://github.com/ByJTT - Support placeholder: https://buymeacoffee.com/ByJTT (replace with real URL when ready).

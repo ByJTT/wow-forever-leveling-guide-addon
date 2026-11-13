@@ -5,6 +5,7 @@ ns:RegisterGuide("horde_01_10_durotar", {
     faction = "Horde",
     minLevel = 1,
     maxLevel = 10,
+    next = "horde_10_20_barrens_stonetalon_scaffold",
     steps = {
         { type = "accept", quest = 4641, title = "Accept: Your Place In The World", npc = "Kaltunk", zone = "Valley of Trials", coords = { mapID = 1411, x = 0.43, y = 0.68 }, note = "Pick up your first quest from Kaltunk." },
         { type = "turnin", quest = 4641, title = "Turn in: Your Place In The World", npc = "Gornek", zone = "Valley of Trials", coords = { mapID = 1411, x = 0.42, y = 0.68 } },
@@ -32,6 +33,6 @@ ns:RegisterGuide("horde_01_10_durotar", {
         { type = "level", level = 6, title = "Reach level 6 in Sen'jin / Echo Isles area", zone = "Durotar", coords = { mapID = 1411, x = 0.56, y = 0.74 }, note = "Pick up local Sen'jin quests and continue leveling. Extend this route with more 6-10 steps as needed." },
         { type = "goto", title = "Continue to Razor Hill", zone = "Durotar", coords = { mapID = 1411, x = 0.52, y = 0.44 }, note = "When ready, move north to Razor Hill and pick up hub quests." },
         { type = "level", level = 10, title = "Reach level 10", zone = "Durotar", coords = { mapID = 1411, x = 0.52, y = 0.44 }, note = "Quest around Razor Hill and nearby areas. Add class quests and more steps to optimize." },
-        { type = "note", title = "Starter route complete (1-10 sample)", note = "This is a free starter route included with ForeverLevelingGuide ByJTT. Add or import full routes in Data/ and load with /flg load <key>. Contributions welcome: https://github.com/ByJTT/wow-forever-leveling-guide-addon" },
+        { type = "note", title = "Starter route complete (1-10)", note = "Durotar starter sample complete. Continue with /flg continue to load the next bracket scaffold (10-20 Barrens/Stonetalon), then verify and tune it for WoW Forever. Contributions welcome: https://github.com/ByJTT/wow-forever-leveling-guide-addon" },
     },
 })

@@ -5,6 +5,7 @@ ns:RegisterGuide("alliance_01_10_elwynn", {
     faction = "Alliance",
     minLevel = 1,
     maxLevel = 10,
+    next = "alliance_10_20_westfall_loch_modan_darkshore_scaffold",
     steps = {
         { type = "accept", quest = 783, title = "Accept: A Threat Within", npc = "Deputy Willem", zone = "Northshire Valley", coords = { mapID = 1429, x = 0.48, y = 0.41 }, note = "Start at Northshire Abbey." },
         { type = "turnin", quest = 783, title = "Turn in: A Threat Within", npc = "Marshal McBride", zone = "Northshire Abbey", coords = { mapID = 1429, x = 0.49, y = 0.41 } },
@@ -30,6 +31,6 @@ ns:RegisterGuide("alliance_01_10_elwynn", {
         { type = "level", level = 7, title = "Reach level 7 around Goldshire", zone = "Elwynn Forest", coords = { mapID = 1429, x = 0.42, y = 0.66 }, note = "Pick up local Goldshire quests and quest through nearby farms and mines." },
         { type = "goto", title = "Explore wider Elwynn (farms, mines, Eastvale)", zone = "Elwynn Forest", coords = { mapID = 1429, x = 0.74, y = 0.72 }, note = "Progress through Goldshire, Maclure/Vineyard, Fargodeep/Jasperlode, and Eastvale Logging Camp." },
         { type = "level", level = 10, title = "Reach level 10", zone = "Elwynn Forest", coords = { mapID = 1429, x = 0.42, y = 0.66 }, note = "Complete enough Elwynn quests to hit 10. Add class quests and more steps to optimize." },
-        { type = "note", title = "Starter route complete (1-10 sample)", note = "This is a free starter route included with ForeverLevelingGuide ByJTT. Add or import full routes in Data/ and load with /flg load <key>. Contributions welcome: https://github.com/ByJTT/wow-forever-leveling-guide-addon" },
+        { type = "note", title = "Starter route complete (1-10)", note = "Elwynn Forest starter sample complete. Continue with /flg continue to load the next bracket scaffold (10-20 Westfall/Loch Modan/Darkshore), then verify and tune it for WoW Forever. Contributions welcome: https://github.com/ByJTT/wow-forever-leveling-guide-addon" },
     },
 })

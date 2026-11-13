@@ -23,11 +23,11 @@ Guidance for AI coding agents and automated contributors.
 ## Commands & behavior
 
 - Primary slash: `/flg` (aliases: `/levelguide`, `/journey`, `/jf`).
-- Key commands: `show|hide|toggle|list|load <key>|next|prev|skip|reset|arrow|auto|announce|where|suggest|debug|help`.
+- Key commands: `show|hide|toggle|list|load <key>|next|prev|skip|reset|continue|suggest|arrow|auto|announce|where|debug|help`.
 - UI includes an in-panel **Guides** picker for loading registered routes.
-- Routes are registered via `ns:RegisterGuide(key, guide)` in `Data/*.lua` and listed in the TOC. Guides may include `scaffold=true` for WIP placeholders (surfaced in list/picker/status).
-- Engine supports broad step type/field aliases (quest accept/complete/turnin, goto/travel/path/waypoint arrival, level, collect/item counts, and manual/info steps). Bundled routes include 1-10 starters and original 10-60 scaffold placeholders for in-game-verified expansion. Auto-advance is best-effort; manual controls always work.
-- Guide flow includes level/faction-aware auto-selection, `/flg suggest` and guide-complete next suggestions, and optional best-effort TomTom waypoint integration when available (no dependency). All route/content code must remain original/open.
+- Routes are registered via `ns:RegisterGuide(key, guide)` in `Data/*.lua` and listed in the TOC. Guides may include `scaffold=true` for WIP placeholders (surfaced in list/picker/status) and `next` to chain to the following guide.
+- Engine supports broad step type/field aliases (quest accept/complete/turnin, goto/travel/path/waypoint arrival, level, collect/item counts, and manual/info steps). Bundled routes include 1-10 starters and original 10-60 chained scaffold placeholders for in-game-verified expansion. Auto-advance is best-effort; manual controls always work.
+- Guide flow includes level/faction-aware auto-selection, guide chaining (`next`) with `/flg continue`, `/flg suggest` and guide-complete next suggestions, and optional best-effort TomTom waypoint integration when available (no dependency). All route/content code must remain original/open (scaffold bracket/zone flow may be compared at a high level to established guides for pacing, but step text/structure is clean-room).
 
 ## Changes & releases
 
