@@ -1,8 +1,8 @@
-## Interface: 16001, 30300
+﻿## Interface: 16001, 30300
 ## Title: WoW Forever Leveling Guide Addon ByJTT
 ## Notes: Free, data-driven leveling guide for WoW Forever. Step viewer, navigation arrow, progress tracking. /flg | by ByJTT
 ## Author: ByJTT
-## Version: 0.1.0
+## Version: 0.2.0
 ## SavedVariables: ForeverLevelingGuideDB
 ## X-Category: Quests & Leveling
 ## X-License: MIT

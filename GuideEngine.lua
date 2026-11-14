@@ -434,6 +434,39 @@ function Engine:IsPlayerNear(step, threshold)
     return (dx * dx + dy * dy) <= (t * t)
 end
 
+function Engine:GoToStep(targetIndex, reason)
+    if not ns.charDB then return nil end
+    local guide = self:GetGuide()
+    if not guide or type(guide.steps) ~= "table" then return nil end
+
+    local total = #guide.steps
+    if total < 1 then
+        ns.charDB.stepIndex = 1
+        return 1
+    end
+
+    local idx = ToNumber(targetIndex)
+    if idx == nil then return nil end
+    idx = math.floor(idx + 0.000001)
+    if idx < 1 then idx = 1 end
+    if idx > total then idx = total end
+
+    ns.charDB.completed = type(ns.charDB.completed) == "table" and ns.charDB.completed or {}
+    ns.charDB.skipped = type(ns.charDB.skipped) == "table" and ns.charDB.skipped or {}
+    for i = idx, (total + 1) do
+        ns.charDB.completed[i] = nil
+        ns.charDB.skipped[i] = nil
+    end
+
+    ns.charDB.stepIndex = idx
+    self:ClampIndex()
+
+    if ns.UI and ns.UI.Refresh then ns.UI:Refresh() end
+    if ns.Arrow and ns.Arrow.Update then ns.Arrow:Update() end
+    self:EvaluateCurrent(reason or "goto-step")
+    return idx
+end
+
 function Engine:Initialize()
     if not ns.charDB then return end
     self:ClampIndex()

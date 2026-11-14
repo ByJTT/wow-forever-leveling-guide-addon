@@ -1,4 +1,4 @@
-local _, ns = ...
+﻿local _, ns = ...
 
 ns.Arrow = ns.Arrow or {}
 local Arrow = ns.Arrow
@@ -197,6 +197,20 @@ function Arrow:RefreshTargetFromStep()
         return
     end
 
+    -- Manual waypoint override (clean-room convenience): /flg way set/clear
+    if ns and ns.GetManualWaypoint then
+        local mwMap, mwX, mwY, mwTitle, mwZone = ns:GetManualWaypoint()
+        if mwMap and mwX and mwY then
+            self:SetTarget({
+                coords = { mapID = mwMap, x = mwX, y = mwY },
+                title = mwTitle or "Manual waypoint",
+                zone = mwZone,
+                manual = true,
+            })
+            return
+        end
+    end
+
     local guide = ns:GetCurrentGuide()
     local steps = (guide and type(guide.steps) == "table") and guide.steps or nil
     if not guide or not steps or #steps == 0 then
@@ -257,6 +271,9 @@ function Arrow:Update(_)
     local mapID, px, py = GetPlayerMapAndPos()
     local t = self.target
     local label = t.title or "Objective"
+    if t.manual then
+        label = "|cff88ddff[Way]|r " .. label
+    end
     if t.zone and t.zone ~= "" then
         label = label .. " (" .. tostring(t.zone) .. ")"
     end

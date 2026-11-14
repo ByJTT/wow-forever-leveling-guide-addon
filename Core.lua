@@ -1,7 +1,7 @@
-local ADDON_NAME, ns = ...
+﻿local ADDON_NAME, ns = ...
 
 ns.ADDON_NAME = ADDON_NAME
-ns.VERSION = "0.1.0"
+ns.VERSION = "0.2.0"
 ns.SCHEMA = 1
 ns.PREFIX = "|cff4dd0ffForeverLevelingGuide|r"
 ns.BYLINE = "by ByJTT"
@@ -13,6 +13,7 @@ local defaults = {
         stepIndex = 1,
         completed = {},
         skipped = {},
+        manualWaypoint = nil, -- { mapID, x, y, title, zone, source }
     },
     profile = {
         locked = false,
@@ -27,6 +28,10 @@ local defaults = {
             width = 380,
             height = 260,
             shown = true,
+        },
+        minimap = {
+            hide = false,
+            angle = 220,
         },
     },
 }
@@ -90,10 +95,20 @@ function ns:GetDB()
         db.profile.ui = {}
         DeepCopyDefaults(defaults.profile.ui, db.profile.ui)
     end
+    if type(db.profile.minimap) ~= "table" then
+        db.profile.minimap = {}
+        DeepCopyDefaults(defaults.profile.minimap, db.profile.minimap)
+    end
     db.profile.locked = ToBool(db.profile.locked, defaults.profile.locked)
     db.profile.showArrow = ToBool(db.profile.showArrow, defaults.profile.showArrow)
     db.profile.autoAdvance = ToBool(db.profile.autoAdvance, defaults.profile.autoAdvance)
     db.profile.announce = ToBool(db.profile.announce, defaults.profile.announce)
+    if type(db.profile.minimap.hide) ~= "boolean" then db.profile.minimap.hide = defaults.profile.minimap.hide end
+    db.profile.minimap.angle = tonumber(db.profile.minimap.angle) or defaults.profile.minimap.angle
+
+    if charDB.manualWaypoint ~= nil and type(charDB.manualWaypoint) ~= "table" then
+        charDB.manualWaypoint = nil
+    end
 
     self.db = db
     self.charDB = charDB
@@ -367,6 +382,25 @@ local function NormalizeCoord01(v)
     return n
 end
 
+local function ToNumber(v)
+    local n = tonumber(v)
+    if n == nil then return nil end
+    return n
+end
+ns.ToNumber = ToNumber
+
+function ns:GetManualWaypoint()
+    local mw = self.charDB and self.charDB.manualWaypoint
+    if type(mw) ~= "table" then return nil, nil, nil, nil, nil end
+    local mapID = tonumber(mw.mapID)
+    local x = NormalizeCoord01(mw.x)
+    local y = NormalizeCoord01(mw.y)
+    if not mapID or not x or not y then return nil, nil, nil, nil, nil end
+    local title = tostring(mw.title or "Manual waypoint")
+    local zone = mw.zone and tostring(mw.zone) or nil
+    return mapID, x, y, title, zone
+end
+
 function ns:GetPlayerLocationDebug()
     local info = {
         mapID = nil,
@@ -452,6 +486,9 @@ function ns:BuildDebugReport()
     add("Current guide key: " .. SafeToString(key))
     add("Step index: " .. SafeToString(idx) .. " / " .. SafeToString(total))
     add("Settings: arrow=" .. SafeToString(profile and profile.showArrow) .. " autoAdvance=" .. SafeToString(profile and profile.autoAdvance) .. " announce=" .. SafeToString(profile and profile.announce) .. " locked=" .. SafeToString(profile and profile.locked))
+    if profile and profile.minimap then
+        add("Minimap: hide=" .. SafeToString(profile.minimap.hide) .. " angle=" .. SafeToString(profile.minimap.angle))
+    end
     if profile and profile.ui then
         add("UI: shown=" .. SafeToString(profile.ui.shown) .. " point=" .. SafeToString(profile.ui.point) .. " relPoint=" .. SafeToString(profile.ui.relPoint) .. " x=" .. SafeToString(profile.ui.x) .. " y=" .. SafeToString(profile.ui.y) .. " w=" .. SafeToString(profile.ui.width) .. " h=" .. SafeToString(profile.ui.height))
     end
@@ -543,7 +580,16 @@ function ns:BuildDebugReport()
     end
 
     add("")
-    add("Hints: compare route flow relatively (pacing/zone order) to established leveling guides, but keep all step text/structure original and verify quest IDs/mapIDs/coords in-game on WoW Forever. Use /flg list, /flg continue, /flg suggest, and /reload after data changes.")
+    add("[Manual Waypoint]")
+    local mw = self.charDB and self.charDB.manualWaypoint
+    if type(mw) == "table" then
+        add("mapID=" .. SafeToString(mw.mapID) .. " x=" .. SafeToString(mw.x) .. " y=" .. SafeToString(mw.y) .. " title=" .. SafeToString(mw.title) .. " zone=" .. SafeToString(mw.zone) .. " source=" .. SafeToString(mw.source))
+    else
+        add("none")
+    end
+
+    add("")
+    add("Hints: compare route flow relatively (pacing/zone order) to established leveling guides, but keep all step text/structure original and verify quest IDs/mapIDs/coords in-game on WoW Forever. Use /flg list, /flg continue, /flg suggest, /flg goto, /flg way, and /reload after data changes.")
 
     return table.concat(lines, "\n")
 end
@@ -587,6 +633,20 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
     if not ns.db then ns:GetDB() end
     if not ns.charDB or not ns.profile then ns:GetDB() end
 
+    local function ParseCoordToken(tok)
+        if tok == nil then return nil end
+        tok = tostring(tok):gsub(",", ""):gsub("%%", ""):gsub("^%s+", ""):gsub("%s+$", "")
+        local n = tonumber(tok)
+        if n == nil then return nil end
+        if n > 1 then n = n / 100 end
+        return n
+    end
+
+    local function RefreshNav()
+        if ns.UI and ns.UI.Refresh then ns.UI:Refresh() end
+        if ns.Arrow and ns.Arrow.Update then ns.Arrow:Update() end
+    end
+
     if cmd == "" or cmd == "show" or cmd == "config" or cmd == "open" then
         if ns.UI and ns.UI.Show then ns.UI:Show() end
     elseif cmd == "hide" or cmd == "close" then
@@ -601,6 +661,14 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         if ns.Engine and ns.Engine.SkipStep then ns.Engine:SkipStep() end
     elseif cmd == "reset" then
         if ns.Engine and ns.Engine.ResetProgress then ns.Engine:ResetProgress() end
+    elseif cmd == "goto" or cmd == "step" or cmd == "jump" then
+        local n = tonumber(rest:match("^(%-?%d+)"))
+        if not n then
+            ns:Print("Usage: /flg goto <stepNumber>")
+        elseif ns.Engine and ns.Engine.GoToStep then
+            local idx = ns.Engine:GoToStep(n, "goto-step")
+            if idx then ns:Print("Jumped to step " .. tostring(idx) .. ".") else ns:Print("Could not jump to that step (no guide loaded?).") end
+        end
     elseif cmd == "list" or cmd == "guides" then
         ns:PrintGuideList()
     elseif cmd == "load" or cmd == "set" then
@@ -613,6 +681,55 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns.profile.showArrow = not ns.profile.showArrow
         ns:Print("Navigation arrow: " .. (ns.profile.showArrow and "|cff88ff88ON|r" or "|cffff8888OFF|r"))
         if ns.Arrow and ns.Arrow.Update then ns.Arrow:Update() end
+    elseif cmd == "lock" then
+        ns.profile.locked = not ns.profile.locked
+        ns:Print("Panel lock: " .. (ns.profile.locked and "|cff88ff88ON|r" or "|cffff8888OFF|r"))
+        RefreshNav()
+    elseif cmd == "minimap" then
+        if type(ns.profile.minimap) ~= "table" then ns.profile.minimap = { hide = false, angle = 220 } end
+        ns.profile.minimap.hide = not ns.profile.minimap.hide
+        if ns.UI and ns.UI.UpdateMinimapButton then ns.UI:UpdateMinimapButton() end
+        ns:Print("Minimap button: " .. (ns.profile.minimap.hide and "|cffff8888HIDDEN|r" or "|cff88ff88ON|r"))
+    elseif cmd == "way" or cmd == "waypoint" then
+        local sub, args = rest:match("^(%S+)%s*(.-)%s*$")
+        sub = (sub or ""):lower()
+        if sub == "" or sub == "clear" or sub == "off" or sub == "remove" then
+            ns.charDB.manualWaypoint = nil
+            ns:Print("Manual waypoint cleared. Arrow will follow the current guide step when available.")
+            RefreshNav()
+        elseif sub == "here" or sub == "me" or sub == "player" then
+            local loc = ns:GetPlayerLocationDebug() or {}
+            local mx, my = loc.x, loc.y
+            if type(mx) == "number" then mx = mx > 1 and (mx / 100) or mx end
+            if type(my) == "number" then my = my > 1 and (my / 100) or my end
+            if loc.mapID and mx and my then
+                ns.charDB.manualWaypoint = { mapID = loc.mapID, x = mx, y = my, title = (loc.zone and ("Waypoint: " .. tostring(loc.zone))) or "Manual waypoint", zone = loc.zone, source = "player" }
+                ns:Print(string.format("Manual waypoint set to your location (map %s, %.1f, %.1f). Use /flg way clear to remove.", tostring(loc.mapID), mx * 100, my * 100))
+            else
+                ns:Print("Could not read your current map position (client/API limitation). Try /flg way <mapID> <x> <y>.")
+            end
+            RefreshNav()
+        else
+            local parts = {}
+            for token in tostring(rest):gmatch("%S+") do table.insert(parts, token) end
+            local mapID, xTok, yTok
+            if #parts >= 3 and tonumber(parts[1]) and tonumber(parts[1]) > 10 then
+                mapID = tonumber(parts[1]); xTok = parts[2]; yTok = parts[3]
+            elseif #parts >= 2 then
+                local loc = ns:GetPlayerLocationDebug() or {}
+                mapID = loc.mapID
+                xTok = parts[1]; yTok = parts[2]
+            end
+            local x = ParseCoordToken(xTok)
+            local y = ParseCoordToken(yTok)
+            if not mapID or not x or not y then
+                ns:Print("Usage: /flg way here | /flg way clear | /flg way <x> <y> | /flg way <mapID> <x> <y>")
+            else
+                ns.charDB.manualWaypoint = { mapID = tonumber(mapID) or mapID, x = x, y = y, title = "Manual waypoint", source = "slash" }
+                ns:Print(string.format("Manual waypoint set (map %s, %.1f, %.1f). Use /flg way clear to return to step guidance.", tostring(mapID), x * 100, y * 100))
+                RefreshNav()
+            end
+        end
     elseif cmd == "auto" or cmd == "autoadvance" then
         ns.profile.autoAdvance = not ns.profile.autoAdvance
         ns:Print("Auto-advance: " .. (ns.profile.autoAdvance and "|cff88ff88ON|r" or "|cffff8888OFF|r"))
@@ -656,7 +773,8 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("Debug - " .. tostring(ns.ADDON_NAME) .. " v" .. tostring(ns.VERSION) .. " (schema " .. tostring(ns.SCHEMA) .. ")")
         ns:Print("Player: " .. tostring(faction) .. " level " .. tostring(playerLevel))
         ns:Print("Guide: " .. tostring(key or "none") .. " | step " .. tostring(idx) .. "/" .. tostring(total) .. " | type: " .. stepType)
-        ns:Print("Settings: arrow=" .. tostring(ns.profile.showArrow) .. " auto=" .. tostring(ns.profile.autoAdvance) .. " announce=" .. tostring(ns.profile.announce) .. " locked=" .. tostring(ns.profile.locked))
+        local mm = (ns.profile and ns.profile.minimap and not ns.profile.minimap.hide) and "on" or "hidden"
+        ns:Print("Settings: arrow=" .. tostring(ns.profile.showArrow) .. " auto=" .. tostring(ns.profile.autoAdvance) .. " announce=" .. tostring(ns.profile.announce) .. " locked=" .. tostring(ns.profile.locked) .. " minimap=" .. mm)
         ns:Print("Guides loaded: " .. tostring(#ns:GetSortedGuideKeys()))
         if guide and guide.title then ns:Print("Current title: " .. tostring(guide.title)) end
         if guide and guide.scaffold then ns:Print("Note: this is an original scaffold route (WIP). Verify and expand steps for your WoW Forever build.") end
@@ -688,6 +806,10 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
                 ns:Print("Step coords: mapID=" .. tostring(coords.mapID or coords.mapId or coords.map or coords.uiMapID) .. " x=" .. tostring(coords.x or coords.X) .. " y=" .. tostring(coords.y or coords.Y) .. " radius=" .. tostring(step.radius or "default"))
             end
         end
+        if ns.charDB and type(ns.charDB.manualWaypoint) == "table" then
+            local mw = ns.charDB.manualWaypoint
+            ns:Print("Manual waypoint: map=" .. tostring(mw.mapID) .. " x=" .. tostring(mw.x) .. " y=" .. tostring(mw.y) .. " (" .. tostring(mw.title or "waypoint") .. ") - /flg way clear to return to guide")
+        end
 
         if wantExport and ns.BuildDebugReport then
             local report = ns:BuildDebugReport()
@@ -709,12 +831,16 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("  /flg list          - list available guides")
         ns:Print("  /flg load <key>    - load a guide")
         ns:Print("  /flg next|prev|skip|reset - step controls")
+        ns:Print("  /flg goto <n>      - jump to step number")
         ns:Print("  /flg arrow         - toggle navigation arrow")
         ns:Print("  /flg auto          - toggle auto-advance")
         ns:Print("  /flg announce      - toggle chat announcements")
+        ns:Print("  /flg lock          - toggle panel lock")
+        ns:Print("  /flg minimap       - toggle minimap button")
         ns:Print("  /flg where         - print current guide/step")
         ns:Print("  /flg suggest       - suggest a next guide for your level/faction")
         ns:Print("  /flg continue      - load the next/suggested guide")
+        ns:Print("  /flg way           - set/clear manual waypoint (here|clear|x y|mapID x y)")
         ns:Print("  /flg debug         - diagnostics summary")
         ns:Print("  /flg debug export  - copyable full debug report (verification/tuning)")
         ns:Print("Aliases: /levelguide, /journey, /jf")
@@ -750,5 +876,5 @@ function ns:OnLogin()
     if self.UI and self.UI.Initialize then self.UI:Initialize() end
     if self.Arrow and self.Arrow.Initialize then self.Arrow:Initialize() end
 
-    self:Print("Loaded v" .. self.VERSION .. " " .. self.BYLINE .. ". Type /flg for help.")
+    self:Print("Loaded v" .. self.VERSION .. " " .. self.BYLINE .. " (ByJTT, original open routes). Type /flg for help.")
 end

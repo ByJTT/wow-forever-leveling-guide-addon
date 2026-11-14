@@ -6,6 +6,7 @@ local UI = ns.UI
 local frame
 local guidePicker
 local exportFrame
+local minimapButton
 
 local function Clamp(n, minv, maxv)
     if n < minv then return minv end
@@ -73,6 +74,24 @@ local function SetButtonEnabled(btn, enabled)
     else
         if btn.Disable then btn:Disable() end
     end
+end
+
+local function SetSimpleTooltip(frameOrBtn, title, text)
+    if not frameOrBtn or not GameTooltip then return end
+    frameOrBtn:HookScript("OnEnter", function(selfObj)
+        if not GameTooltip then return end
+        GameTooltip:SetOwner(selfObj, "ANCHOR_RIGHT")
+        if title and title ~= "" then
+            GameTooltip:AddLine(tostring(title), 1, 0.82, 0)
+        end
+        if text and text ~= "" then
+            GameTooltip:AddLine(tostring(text), 1, 1, 1, true)
+        end
+        GameTooltip:Show()
+    end)
+    frameOrBtn:HookScript("OnLeave", function()
+        if GameTooltip then GameTooltip:Hide() end
+    end)
 end
 
 local function FormatCoords(coords)
@@ -418,6 +437,11 @@ function UI:Create()
     frame.skipBtn = MakeButton("Skip", 52, 136, function() if ns.Engine and ns.Engine.SkipStep then ns.Engine:SkipStep() end end)
     frame.resetBtn = MakeButton("Reset", 52, 192, function() if ns.Engine and ns.Engine.ResetProgress then ns.Engine:ResetProgress() end end)
     frame.guidesBtn = MakeButton("Guides", 58, 248, function() ToggleGuidePicker(frame.guidesBtn) end)
+    SetSimpleTooltip(frame.prevBtn, "Previous step", "Go back to an earlier step.")
+    SetSimpleTooltip(frame.nextBtn, "Next step / Continue", "Complete this step, or continue to the next guide at the end.")
+    SetSimpleTooltip(frame.skipBtn, "Skip step", "Skip this step and move on.")
+    SetSimpleTooltip(frame.resetBtn, "Reset progress", "Restart this guide for your character.")
+    SetSimpleTooltip(frame.guidesBtn, "Choose a guide", "Open the guide list to load a route.")
 
     local lock = CreateFrame("CheckButton", nil, frame, "UICheckButtonTemplate")
     lock:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -10, 6)
@@ -432,6 +456,7 @@ function UI:Create()
             ns.profile.locked = selfBtn:GetChecked() and true or false
         end
     end)
+    SetSimpleTooltip(lock, "Lock panel", "Prevent moving or resizing the guide window.")
     frame.lock = lock
 
     local resize = CreateFrame("Button", nil, frame)
@@ -723,7 +748,122 @@ function UI:ShowExportDialog(text, dialogTitle)
     return true
 end
 
+
+
+local function PositionMinimapButton(btn, angleDeg)
+    if not btn or not Minimap then return end
+    local angle = math.rad(tonumber(angleDeg) or 220)
+    local radius = 80
+    local x = math.cos(angle) * radius
+    local y = math.sin(angle) * radius
+    btn:ClearAllPoints()
+    btn:SetPoint("CENTER", Minimap, "CENTER", x, y)
+end
+
+function UI:UpdateMinimapButton()
+    if not ns or not ns.profile then return end
+    if type(ns.profile.minimap) ~= "table" then
+        ns.profile.minimap = { hide = false, angle = 220 }
+    end
+    local cfg = ns.profile.minimap
+    if cfg.hide == nil then cfg.hide = false end
+    if tonumber(cfg.angle) == nil then cfg.angle = 220 end
+
+    if not minimapButton then
+        if not Minimap or not CreateFrame then return end
+        local b = CreateFrame("Button", "ForeverLevelingGuideMinimapButton", Minimap)
+        b:SetSize(31, 31)
+        b:SetFrameStrata("MEDIUM")
+        if Minimap.GetFrameLevel then
+            b:SetFrameLevel((Minimap:GetFrameLevel() or 0) + 8)
+        end
+        b:SetClampedToScreen(true)
+        b:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        b:RegisterForDrag("LeftButton")
+
+        local overlay = b:CreateTexture(nil, "OVERLAY")
+        overlay:SetSize(53, 53)
+        overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+        overlay:SetPoint("TOPLEFT", 0, 0)
+
+        local bg = b:CreateTexture(nil, "BACKGROUND")
+        bg:SetSize(20, 20)
+        bg:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
+        bg:SetPoint("TOPLEFT", 7, -5)
+
+        local icon = b:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(18, 18)
+        icon:SetPoint("TOPLEFT", 7, -6)
+        if not icon:SetTexture("Interface\\Icons\\INV_Misc_Map_01") then
+            icon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
+        end
+        b.icon = icon
+
+        if b.SetHighlightTexture then
+            b:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
+        end
+
+        b:SetScript("OnEnter", function(selfBtn)
+            if not GameTooltip then return end
+            GameTooltip:SetOwner(selfBtn, "ANCHOR_LEFT")
+            GameTooltip:AddLine("|cff4dd0ffForeverLevelingGuide|r", 1, 1, 1)
+            GameTooltip:AddLine("by ByJTT - original open routes", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine(" ")
+            GameTooltip:AddLine("|cffffd100Left Click:|r Show/Hide guide panel", 0.95, 0.95, 0.95)
+            GameTooltip:AddLine("|cffffd100Right Click:|r Open Guides list", 0.95, 0.95, 0.95)
+            GameTooltip:AddLine("|cffffd100Drag:|r Move this button", 0.95, 0.95, 0.95)
+            GameTooltip:AddLine("|cff888888/flg minimap toggles visibility|r", 0.75, 0.75, 0.75)
+            GameTooltip:Show()
+        end)
+        b:SetScript("OnLeave", function()
+            if GameTooltip then GameTooltip:Hide() end
+        end)
+
+        b:SetScript("OnClick", function(_, button)
+            if button == "RightButton" then
+                UI:Show()
+                if frame and frame.guidesBtn then
+                    ToggleGuidePicker(frame.guidesBtn)
+                elseif frame then
+                    ToggleGuidePicker(frame)
+                end
+            else
+                UI:Toggle()
+            end
+        end)
+
+        b:SetScript("OnDragStart", function(selfBtn)
+            selfBtn:SetScript("OnUpdate", function()
+                if not Minimap then return end
+                local mx, my = Minimap:GetCenter()
+                local px, py = GetCursorPosition()
+                local scale = (Minimap:GetEffectiveScale() or (UIParent and UIParent:GetEffectiveScale()) or 1)
+                px, py = px / scale, py / scale
+                local angle = math.deg(math.atan2(py - my, px - mx))
+                if ns.profile and ns.profile.minimap then
+                    ns.profile.minimap.angle = angle
+                end
+                PositionMinimapButton(selfBtn, angle)
+            end)
+        end)
+        b:SetScript("OnDragStop", function(selfBtn)
+            selfBtn:SetScript("OnUpdate", nil)
+        end)
+
+        minimapButton = b
+    end
+
+    if cfg.hide then
+        minimapButton:Hide()
+    else
+        PositionMinimapButton(minimapButton, cfg.angle or 220)
+        minimapButton:Show()
+    end
+end
+
+
 function UI:Initialize()
     self:Create()
     self:Refresh()
+    self:UpdateMinimapButton()
 end

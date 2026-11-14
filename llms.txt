@@ -5,16 +5,16 @@
 - Repo: https://github.com/ByJTT/wow-forever-leveling-guide-addon
 - Display name (TOC Title, "AddonName ByJTT" style): `WoW Forever Leveling Guide Addon ByJTT`
 - In-game addon folder name (critical, must remain stable): `ForeverLevelingGuide`
-- Purpose: step-by-step leveling guide panel with navigation arrow and progress tracking; in-panel guide picker; extensible Lua route data. Guidance UI only (no gameplay automation).
+- Purpose: step-by-step leveling guide panel with minimap access, navigation arrow/manual waypoint, and progress tracking; in-panel guide picker; extensible Lua route data. Guidance UI only (no gameplay automation).
 - Target: World of Warcraft: Forever (Interface 16001, 30300). Feature-detected API fallbacks. No Ace/framework deps.
 - Install path: `<WoW Forever>/Interface/AddOns/ForeverLevelingGuide/ForeverLevelingGuide.toc`
 - Required in-game files: `ForeverLevelingGuide.toc`, `Core.lua`, `GuideEngine.lua`, `Tracker.lua`, `Arrow.lua`, `UI.lua`, `Data/Guides.lua`, and route files in `Data/` listed in TOC.
-- Commands: `/flg show|hide|toggle|list|load <key>|next|prev|skip|reset|continue|suggest|arrow|auto|announce|where|debug|debug export|help` (aliases: `/levelguide`, `/journey`, `/jf`). UI includes a **Guides** picker button.
+- Commands: `/flg show|hide|toggle|list|load <key>|next|prev|skip|reset|goto <n>|continue|suggest|arrow|auto|announce|lock|minimap|way|where|debug|debug export|help` (aliases: `/levelguide`, `/journey`, `/jf`). UI includes a **Guides** picker and draggable minimap button.
 - Routes: bundled 1-10 starter samples plus original 10-60 chained scaffold guides (Horde/Alliance, `scaffold=true`, WIP placeholders, `next` links). Engine supports broad step type/field aliases (quest, travel/path/coords arrival, level, collect/item, manual/info) with best-effort auto-advance.
-- Guide flow: level/faction-aware auto-selection, guide chaining (`next`) with `/flg continue`, `/flg suggest` and guide-complete next suggestions, navigation arrow, optional best-effort TomTom waypoint integration when installed (no dependency). Scaffold bracket/zone flow compared at a high level to established guides for pacing; step text/structure original/clean-room.
+- Guide flow: level/faction-aware auto-selection, guide chaining (`next`) with `/flg continue`, `/flg suggest` and guide-complete next suggestions, navigation arrow, manual waypoint override (`/flg way`), optional best-effort TomTom waypoint integration when installed (no dependency). Scaffold bracket/zone flow compared at a high level to established guides for pacing; step text/structure original/clean-room.
 - Verification/authoring aids: `/flg debug export` (copyable in-game state report) and `python tools/validate_guides.py` (offline guide/chain/TOC checks). Keep routes original/clean-room; do not guess real in-game quest IDs/mapIDs/coords (verify on WoW Forever).
-- SavedVariables: `ForeverLevelingGuideDB` (schema-versioned, per-character progress/profile).
-- Safety: UI/route helper only - no gameplay automation, no protected/secure actions. All route content and engine logic must remain original/open. Canonical addon: `ForeverLevelingGuide` (keep `BYJTT_JourneyFree` as research/prototype only if present). No configured git remote in this workspace by default.
+- SavedVariables: `ForeverLevelingGuideDB` (schema-versioned, per-character progress/profile, additive manual waypoint/minimap settings).
+- Safety: UI/route helper only - no gameplay automation, no protected/secure actions. All route content and engine logic must remain original/open. Canonical addon: `ForeverLevelingGuide` (keep `BYJTT_JourneyFree` as research/prototype only if present).
 - Branding/support (public): by ByJTT - https://byjtt.com - https://github.com/ByJTT - Support placeholder: https://buymeacoffee.com/ByJTT (replace with real URL when ready).
 - Issues: include WoW Forever build/interface, addon version (`/flg debug`), guide key/step, steps, expected/actual, Lua errors (`/console scriptErrors 1`). No account data/local personal paths.
 - License: MIT.

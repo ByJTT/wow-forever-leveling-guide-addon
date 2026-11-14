@@ -1,16 +1,18 @@
 # wow-forever-leveling-guide-addon - WoW Forever Leveling Guide Addon ByJTT
 
-> **WoW Forever Leveling Guide Addon ByJTT** - a free, minimal, data-driven leveling guide for **World of Warcraft: Forever**. Step viewer, navigation arrow, and progress tracking with extensible Lua routes. Solo dev studio: **ByJTT**.
+> **WoW Forever Leveling Guide Addon ByJTT** - a free, minimal, data-driven leveling guide for **World of Warcraft: Forever**. Step viewer, navigation arrow, minimap access, and progress tracking with extensible Lua routes. Solo dev studio: **ByJTT**.
 
-**Keywords (discovery):** WoW Forever addon, World of Warcraft Forever, leveling guide, quest guide, step-by-step, navigation arrow, ByJTT, data-driven, free, open source, Lua.
+**Keywords (discovery):** WoW Forever addon, World of Warcraft Forever, leveling guide, quest guide, step-by-step, navigation arrow, minimap button, manual waypoint, ByJTT, data-driven, free, open source, Lua.
 
 ## Features
 
-- **Step-by-step guide panel** - current step details (type, quest/NPC/zone/coords/notes/tips), progress counter, in-panel **Guides** picker, and Prev/Next/Skip/Reset controls.
-- **Navigation arrow** - follows the current step's map coordinates when available (best-effort, client/API dependent), and hides when no valid target/step is available. Optional best-effort TomTom waypoint integration when TomTom is installed (no dependency).
+- **Step-by-step guide panel** - current step details (type, quest/NPC/zone/coords/notes/tips), progress counter, in-panel **Guides** picker, and Prev/Next/Skip/Reset controls with clear tooltips.
+- **Minimap button (discoverable access)** - draggable minimap button: **left-click** show/hide panel, **right-click** open Guides list, tooltip help, and `/flg minimap` toggle. Position is saved per profile.
+- **Navigation arrow** - follows the current step's map coordinates when available (best-effort, client/API dependent) and hides when no valid target/step is available. Supports a **manual waypoint override** (`/flg way`) and optional best-effort TomTom waypoint integration when TomTom is installed (no dependency).
+- **Manual waypoint & step jump** - set/clear a temporary waypoint (`/flg way here|clear|<x> <y>|<mapID> <x> <y>`) for quick navigation, and jump directly to a step with `/flg goto <n>`.
 - **Auto-advance (best effort)** - detects quest accept/complete/turn-in, level-ups, item collection, and arrival at travel steps; manual controls always available.
 - **Smart guide flow** - level/faction-aware guide auto-selection, guide chaining (`next`) with `/flg continue`, scaffold labeling, guide-complete suggestions, and `/flg suggest` for a recommended next route.
-- **Per-character progress** - saved guide selection and step progress via `ForeverLevelingGuideDB` (schema-versioned).
+- **Per-character progress** - saved guide selection, step progress, and manual waypoint via `ForeverLevelingGuideDB` (schema-versioned).
 - **Extensible route format** - drop-in Lua guide modules in `Data/` registered with `ns:RegisterGuide(...)`.
 - **Bundled free routes (original/open)** - sample 1-10 starter guides plus 10-60 scaffold routes (WIP placeholders) to provide a complete, extensible foundation for in-game-verified route authoring.
 - **ByJTT foundation style** - minimal footprint (Lua + TOC), clear docs, safe-by-default UI (guidance only, no gameplay automation), and explicit install naming.
@@ -50,19 +52,23 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 /flg load <key>         load a guide (e.g. horde_01_10_durotar)
 /flg next|prev|skip     navigate steps manually
 /flg reset              reset progress for the current character/guide
+/flg goto <n>           jump to a step number (1-based)
 /flg continue           load the next/suggested guide (guide chain or best match)
 /flg suggest            suggest a next guide for your level/faction
 /flg arrow              toggle navigation arrow
 /flg auto               toggle auto-advance
 /flg announce           toggle chat announcements
+/flg lock               toggle panel lock (move/resize)
+/flg minimap            toggle minimap button
+/flg way                set/clear manual waypoint (here|clear|<x> <y>|<mapID> <x> <y>)
 /flg where              print current guide/step in chat
 /flg debug              print addon state/diagnostics summary
 /flg debug export       open a copyable full debug report (verification/tuning)
 /flg help               show commands
 ```
 
-- You can also use the in-panel **Guides** button to pick and load a guide quickly.
-
+- You can also use the **minimap button** (left-click show/hide, right-click Guides, drag to move) or the in-panel **Guides** button to pick and load a guide quickly.
+- A manual waypoint (`/flg way`) temporarily overrides the arrow target until cleared with `/flg way clear`.
 - On first login (if no guide is loaded), the addon attempts to auto-select a bundled starter guide for your faction when available.
 
 ## Bundled guides (free & open)
@@ -87,6 +93,7 @@ ns:RegisterGuide("my_guide_key", {
   title = "My Custom 1-20 Route",
   faction = "Horde", -- or "Alliance" / "Neutral"
   minLevel = 1, maxLevel = 20,
+  next = "my_next_guide_key", -- optional chain
   steps = {
     { type = "accept",   quest = 123, title = "Accept: Example", npc = "Some NPC", zone = "Zone", coords = { mapID = 1411, x = 0.50, y = 0.50 } },
     { type = "complete", quest = 123, title = "Complete: Example", coords = { mapID = 1411, x = 0.52, y = 0.48 }, note = "Do the thing." },
@@ -117,18 +124,20 @@ ns:RegisterGuide("my_guide_key", {
 - **Guidance only:** this addon provides a UI/route helper (no gameplay automation, no protected/combat-secure actions).
 - **Routes are open & original:** bundled 1-10 guides are samples and 10-60 guides are chained scaffolds/WIP; bracket/zone flow is compared at a high level to established leveling guides for pacing, but all step text/structure is original/clean-room. Comprehensive, tuned routes are community/extensible and must be verified on WoW Forever.
 - **Optional waypoint integration:** if TomTom is installed, the addon can set a best-effort waypoint for the current step target (no dependency required). Native arrow behavior remains best-effort and client/API dependent.
+- **Manual waypoint vs step target:** `/flg way` sets a temporary manual waypoint that overrides the arrow target until cleared (`/flg way clear`).
 
 ## Troubleshooting
 
 - **Addon not listed:** confirm the folder is named `ForeverLevelingGuide` and contains `ForeverLevelingGuide.toc`. Enable "Load out of date AddOns" if needed, then `/reload`.
 - **No guide/steps:** run `/flg list` and `/flg load <key>`. Use `/flg debug` to check loaded state.
-- **Arrow/coords off:** `mapID`/coords are client-specific; adjust the step's `coords` or use `/flg next|skip` to proceed.
+- **Minimap button missing:** run `/flg minimap` to toggle it on (position is saved; drag to reposition). Left-click toggles the panel, right-click opens the Guides list.
+- **Arrow/coords off:** `mapID`/coords are client-specific; adjust the step's `coords`, set a temporary manual waypoint with `/flg way ...`, or use `/flg next|skip` to proceed. The arrow may show "Different map" or "Position unavailable" on some clients/maps.
 - **Auto-advance not triggering:** APIs differ across clients; use manual controls and report with `/flg debug export` (copyable report with client/build, guide/step, map/coords, and state), plus steps and expected/actual behavior (no account data).
 
 ## Authoring & verification tooling (offline)
 
 - **Guide data validator:** `python tools/validate_guides.py [project_root]` - lightweight offline checks for structural issues, guide/chain integrity, TOC/data coverage, and common field/coord/step-shape problems (without in-game validation). Use it after editing `Data/*.lua` or scaffolds to catch mistakes before `/reload` and in-game verification.
-- **In-game debug export:** `/flg debug export` opens a copyable report (client/build, player/map/zone/coords, guide/step state, arrow/target/satisfaction/nearby info) to speed up WoW Forever verification and tuning.
+- **In-game debug export:** `/flg debug export` opens a copyable report (client/build, player/map/zone/coords, guide/step/manual waypoint state, arrow/target/satisfaction/nearby info) to speed up WoW Forever verification and tuning.
 - **Route policy:** when comparing to established leveling guides, use only high-level pacing/zone/flow as relative reference and keep all route text/structure original/clean-room. Verify quest IDs, `mapID`s, coordinates, NPCs, and chains in-game on WoW Forever (no guessed real in-game data).
 
 ## Versioning & releases
