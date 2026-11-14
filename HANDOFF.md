@@ -7,7 +7,7 @@
 - **Addon:** `WoW Forever Leveling Guide Addon ByJTT` (repo: `wow-forever-leveling-guide-addon`, in-game folder: `ForeverLevelingGuide`)
 - **Target:** World of Warcraft: Forever (Interface 16001, 30300). Guidance UI only (no gameplay automation, no protected/secure actions).
 - **Version/SV:** TOC `## Version 0.2.0`, Lua `ns.VERSION = "0.2.0"`, `ns.SCHEMA = 1`, SavedVariables `ForeverLevelingGuideDB` (additive profile/char fields for minimap settings and manual waypoint).
-- **Git:** `master` tracks `origin/master` (`https://github.com/ByJTT/wow-forever-leveling-guide-addon.git`, reachable). v0.2.0 and subsequent local polish are committed and pushed (see git log). Working tree clean after commit/push.
+- **Git:** `master` tracks `origin/master` (`https://github.com/ByJTT/wow-forever-leveling-guide-addon.git`, reachable). v0.2.0 and subsequent polish are committed and pushed (see git log). This pass adds `.pkgmeta` for CurseForge/packager release prep (commit/push in progress).
 - **Canonical addon decision:** `ForeverLevelingGuide` is the active/canonical codebase. `C:\Users\jorda\BYJTT_JourneyFree` (no git, older prototype/research with `_research/journey_4.00.06` notes) is **research/prototype reference only** (archived notice added there) - not the shipping addon and not to be duplicated into in-game addon code paths.
 
 ## What is implemented
@@ -32,14 +32,15 @@
 - Data: `Data/Guides.lua`, `Data/Horde_01_10_Durotar.lua`, `Data/Alliance_01_10_Elwynn.lua`, `Data/Scaffolds_Horde.lua`, `Data/Scaffolds_Alliance.lua`
 - Tools/docs/meta: `tools/validate_guides.py`, `README.md`, `CHANGELOG.md`, `AGENTS.md`, `llms.txt`, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`, `.gitignore`, `.gitattributes`, `.luarc.json`, this `HANDOFF.md`
 
-## Recent autopilot changes (2026-11-13)
+## Recent autopilot changes (2026-11-13 to 2026-11-14)
 
 - Refined/chained 1-60 routes, Continue/next-guide flow and UI polish, and docs updates (commits `9107ff3`, `fc8f0c1`).
 - Added `/flg debug export` (copyable in-game report + UI dialog), richer debug/location/step context, offline `tools/validate_guides.py`, and verification/route-policy docs (commit `0807b59`).
 - Normalized scaffold line endings for consistency (commit `9e48826`).
 - **v0.2.0 UX/navigation polish:** added draggable minimap button (`/flg minimap`), manual waypoint override (`/flg way` with arrow `[Way]` target + debug/export state), `/flg goto <n>` step jump, `/flg lock`, UI tooltips, version bump to 0.2.0, and synchronized README/CHANGELOG/AGENTS/llms/CONTRIBUTING/HANDOFF (commit `c9bc970`, pushed). Validator passes (0 errors).
 - **Post-v0.2.0 UI/status polish:** panel progress now shows completion percentage; when a manual waypoint is active the subtitle/body clearly indicate it and remind `/flg way clear`; `/flg where` (`/flg status`) prints richer guide/step/progress/next/waypoint status; help text clarified (commit `b173598`, pushed).
-- **Peer update notifier + docs (this autopilot pass):** added best-effort in-game peer version notifications via addon comms (shared ByJTT prefix, group/raid/instance/guild), `/flg update` toggle (default on), debug/debug-export visibility, and README/CHANGELOG/AGENTS/llms/HANDOFF updates. No internet, cannot auto-update; actual updates via CurseForge/WowUp/Wago when released or GitHub repo. No in-game verification performed. Validator passes (0 errors).
+- **Peer update notifier + docs:** added best-effort in-game peer version notifications via addon comms (shared ByJTT prefix, group/raid/instance/guild), `/flg update` toggle (default on), debug/debug-export visibility, and README/CHANGELOG/AGENTS/llms/HANDOFF updates (commit `f280145`, pushed). No internet, cannot auto-update; actual updates via CurseForge/WowUp/Wago when released or GitHub repo. No in-game verification performed. Validator passes (0 errors).
+- **CurseForge/packager prep (this pass):** added `.pkgmeta` for clean release packaging (`ForeverLevelingGuide/` folder, repo/docs/dev/tools ignored) and refreshed CHANGELOG/HANDOFF notes (commit/push in progress). Validator passes (0 errors).
 
 ## Git/remotes/push status (ecosystem)
 

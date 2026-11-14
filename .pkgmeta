@@ -1,0 +1,17 @@
+package-as: ForeverLevelingGuide
+
+ignore:
+  - .git
+  - .github
+  - .gitignore
+  - .gitattributes
+  - .luarc.json
+  - AGENTS.md
+  - CONTRIBUTING.md
+  - HANDOFF.md
+  - SECURITY.md
+  - llms.txt
+  - tools
+  - README.md
+  - CHANGELOG.md
+  - LICENSE

@@ -10,8 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Peer update notifications (best-effort, no internet):** in-game version check via addon comms with group/raid/instance/guild peers (shared ByJTT prefix). Notifies once per session if a peer runs a newer version. Toggle with `/flg update` (on by default). This does **not** check CurseForge/GitHub directly and cannot auto-install updates - use CurseForge/WowUp/Wago (when released) or the GitHub repo for actual updates.
 - **UI/status clarity:** guide progress now shows a completion percentage in the panel; when a manual waypoint is active, the panel subtitle shows a `[Waypoint]` indicator and the body displays a clear reminder with `/flg way clear` to return to step guidance. `/flg where` (`/flg status`) now prints richer status (guide/key/level range/scaffold state, progress %, current step/type/zone, next guide when complete, and active manual waypoint). `/flg way` with no arguments now shows the current manual waypoint (or usage) instead of clearing it.
+- **CurseForge/packager prep:** added `.pkgmeta` for clean release packaging (`ForeverLevelingGuide/` folder, repo/docs/dev/tools files ignored).
 
-- In-game verification/tuning on WoW Forever pending (APIs/events, mapIDs/coords/quest IDs, UI/arrow behavior per client, and peer update-notify behavior).
+- In-game verification/tuning on WoW Forever pending (APIs/events, mapIDs/coords/quest IDs, UI/arrow/minimap/waypoint behavior per client, and peer update-notify behavior).
 
 ## [0.2.0] - 2026-11-13 (local, not yet tagged/released)
 
