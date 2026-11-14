@@ -531,7 +531,14 @@ function UI:Refresh()
     local atEnd = idx > total
 
     local shownIdx = atEnd and total or Clamp(idx, 1, math.max(total, 1))
-    frame.progress:SetText((total > 0) and (tostring(shownIdx) .. " / " .. tostring(total)) or "0 / 0")
+    if total > 0 then
+        local pct = math.floor((shownIdx / total) * 100 + 0.5)
+        if atEnd then pct = 100 end
+        if pct < 0 then pct = 0 elseif pct > 100 then pct = 100 end
+        frame.progress:SetText(string.format("%d / %d (%d%%)", shownIdx, total, pct))
+    else
+        frame.progress:SetText("0 / 0")
+    end
 
     local subtitle = guide.title or key or "Guide"
     local meta = {}
@@ -540,6 +547,10 @@ function UI:Refresh()
     if guide.scaffold then meta[#meta + 1] = "scaffold/WIP" end
     if key then meta[#meta + 1] = tostring(key) end
     if #meta > 0 then subtitle = subtitle .. " |cff888888(" .. table.concat(meta, ", ") .. ")|r" end
+    local hasManualWaypoint = type(ns.charDB and ns.charDB.manualWaypoint) == "table"
+    if hasManualWaypoint then
+        subtitle = subtitle .. "  |cff88ddff[Waypoint]|r"
+    end
     frame.subtitle:SetText(subtitle)
 
     local continueKey = nil
@@ -570,6 +581,17 @@ function UI:Refresh()
     else
         local step = steps[idx]
         text = StepToLines(step, idx, total)
+    end
+
+    if hasManualWaypoint then
+        local mw = ns.charDB.manualWaypoint or {}
+        local mwTitle = tostring(mw.title or "Manual waypoint")
+        local mwLine = "|cff88ddffManual waypoint active:|r arrow follows |cffffd100" .. mwTitle .. "|r. Use |cffffd100/flg way clear|r to return to step guidance."
+        if text and text ~= "" then
+            text = mwLine .. "\n\n" .. text
+        else
+            text = mwLine
+        end
     end
 
     frame.body:SetWidth(scrollWidth)
@@ -621,7 +643,7 @@ end
 function UI:PrintStatus()
     local guide, key = ns:GetCurrentGuide()
     if not guide then
-        ns:Print("No guide loaded. Use /flg list and /flg load <key>.")
+        ns:Print("No guide loaded. Use /flg list, /flg load <key>, or /flg continue.")
         return
     end
 
@@ -630,21 +652,52 @@ function UI:PrintStatus()
     local idx = ToNumber(ns.charDB and ns.charDB.stepIndex) or 1
     if idx < 1 then idx = 1 end
 
-    ns:Print(string.format("Guide: %s [%s] (%d/%d)", tostring(guide.title or key), tostring(key), math.min(idx, math.max(total, 1)), total))
+    local shownIdx = (idx > total and total > 0) and total or Clamp(idx, 1, math.max(total, 1))
+    local pct = 0
+    if total > 0 then
+        pct = math.floor((shownIdx / total) * 100 + 0.5)
+        if idx > total then pct = 100 end
+        if pct < 0 then pct = 0 elseif pct > 100 then pct = 100 end
+    end
+    local progress = (total > 0) and string.format("%d/%d (%d%%)", math.min(math.max(idx, 1), total), total, pct) or "0/0"
+
+    local guideLabel = tostring(guide.title or key or "Guide")
+    local extra = {}
+    if guide.faction then extra[#extra + 1] = tostring(guide.faction) end
+    if guide.minLevel and guide.maxLevel then extra[#extra + 1] = tostring(guide.minLevel) .. "-" .. tostring(guide.maxLevel) end
+    if guide.scaffold then extra[#extra + 1] = "scaffold/WIP" end
+    local extraText = (#extra > 0) and (" [" .. table.concat(extra, ", ") .. "]") or ""
+
+    ns:Print(string.format("Guide: %s%s | key: %s | progress %s", guideLabel, extraText, tostring(key or "n/a"), progress))
 
     if idx > total then
         ns:Print("Current: Guide complete.")
-        return
+        local nextKey = (ns.GetNextGuideKey and ns:GetNextGuideKey()) or (ns.GetSuggestedGuideKey and ns:GetSuggestedGuideKey()) or nil
+        if nextKey then
+            ns:Print("Next: " .. tostring(nextKey) .. " (use /flg continue)")
+        end
+    else
+        local step = steps[idx]
+        local title = "Step"
+        local stype = "note"
+        if step and ns.Engine and ns.Engine.GetStepTitle then
+            title = ns.Engine:GetStepTitle(step, idx)
+        elseif step then
+            title = step.title or step.name or step.desc or step.type or "Step"
+        end
+        if step then
+            stype = tostring(step.type or step.kind or "note")
+        end
+        ns:Print(string.format("Current: [%d/%d] (%s) %s", idx, total, stype, tostring(title)))
+        if step and step.zone then
+            ns:Print("Zone: " .. tostring(step.zone))
+        end
     end
 
-    local step = steps[idx]
-    local title = "Step"
-    if ns.Engine and ns.Engine.GetStepTitle then
-        title = ns.Engine:GetStepTitle(step, idx)
-    elseif step then
-        title = step.title or step.name or step.desc or step.type or "Step"
+    local mw = ns.charDB and ns.charDB.manualWaypoint
+    if type(mw) == "table" then
+        ns:Print("Manual waypoint: " .. tostring(mw.title or "waypoint") .. " (map " .. tostring(mw.mapID) .. ", x " .. tostring(mw.x) .. ", y " .. tostring(mw.y) .. ") - /flg way clear to restore step guidance")
     end
-    ns:Print("Current: " .. tostring(title))
 end
 
 function UI:ShowExportDialog(text, dialogTitle)

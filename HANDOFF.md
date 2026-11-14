@@ -1,13 +1,13 @@
 # Handoff - WoW Forever Leveling Guide Addon ByJTT
 
-> Last updated: 2026-11-13 (autopilot: v0.2.0 UX/navigation polish, minimap + manual waypoint + goto, docs, commit/push; no in-game verification performed)
+> Last updated: 2026-11-13 (autopilot continue: post-v0.2.0 UI/status polish, handoff/docs refresh, commit/push; no in-game verification performed)
 
 ## Current state
 
 - **Addon:** `WoW Forever Leveling Guide Addon ByJTT` (repo: `wow-forever-leveling-guide-addon`, in-game folder: `ForeverLevelingGuide`)
 - **Target:** World of Warcraft: Forever (Interface 16001, 30300). Guidance UI only (no gameplay automation, no protected/secure actions).
 - **Version/SV:** TOC `## Version 0.2.0`, Lua `ns.VERSION = "0.2.0"`, `ns.SCHEMA = 1`, SavedVariables `ForeverLevelingGuideDB` (additive profile/char fields for minimap settings and manual waypoint).
-- **Git:** `master` tracks `origin/master` (`https://github.com/ByJTT/wow-forever-leveling-guide-addon.git`, reachable). v0.2.0 changes are committed and pushed as part of this autopilot pass (see git log). Working tree clean after commit.
+- **Git:** `master` tracks `origin/master` (`https://github.com/ByJTT/wow-forever-leveling-guide-addon.git`, reachable). v0.2.0 and subsequent local polish are committed and pushed (see git log). Working tree clean after commit/push.
 - **Canonical addon decision:** `ForeverLevelingGuide` is the active/canonical codebase. `C:\Users\jorda\BYJTT_JourneyFree` (no git, older prototype/research with `_research/journey_4.00.06` notes) is **research/prototype reference only** (archived notice added there) - not the shipping addon and not to be duplicated into in-game addon code paths.
 
 ## What is implemented
@@ -37,7 +37,8 @@
 - Refined/chained 1-60 routes, Continue/next-guide flow and UI polish, and docs updates (commits `9107ff3`, `fc8f0c1`).
 - Added `/flg debug export` (copyable in-game report + UI dialog), richer debug/location/step context, offline `tools/validate_guides.py`, and verification/route-policy docs (commit `0807b59`).
 - Normalized scaffold line endings for consistency (commit `9e48826`).
-- **v0.2.0 UX/navigation polish (this commit):** added draggable minimap button (`/flg minimap`), manual waypoint override (`/flg way` with arrow `[Way]` target + debug/export state), `/flg goto <n>` step jump, `/flg lock`, UI tooltips, version bump to 0.2.0, and synchronized README/CHANGELOG/AGENTS/llms/CONTRIBUTING/HANDOFF. Validator passes (0 errors).
+- **v0.2.0 UX/navigation polish:** added draggable minimap button (`/flg minimap`), manual waypoint override (`/flg way` with arrow `[Way]` target + debug/export state), `/flg goto <n>` step jump, `/flg lock`, UI tooltips, version bump to 0.2.0, and synchronized README/CHANGELOG/AGENTS/llms/CONTRIBUTING/HANDOFF (commit `c9bc970`, pushed). Validator passes (0 errors).
+- **Post-v0.2.0 UI/status polish (this autopilot pass):** panel progress now shows completion percentage; when a manual waypoint is active the subtitle/body clearly indicate it and remind `/flg way clear`; `/flg where` (`/flg status`) prints richer guide/step/progress/next/waypoint status; help text clarified. Docs refreshed. No in-game verification performed.
 
 ## Git/remotes/push status (ecosystem)
 

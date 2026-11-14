@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **UI/status clarity:** guide progress now shows a completion percentage in the panel; when a manual waypoint is active, the panel subtitle shows a `[Waypoint]` indicator and the body displays a clear reminder with `/flg way clear` to return to step guidance. `/flg where` (`/flg status`) now prints richer status (guide/key/level range/scaffold state, progress %, current step/type/zone, next guide when complete, and active manual waypoint). `/flg way` with no arguments now shows the current manual waypoint (or usage) instead of clearing it.
+
 - In-game verification/tuning on WoW Forever pending (APIs/events, mapIDs/coords/quest IDs, UI/arrow behavior per client).
 
 ## [0.2.0] - 2026-11-13 (local, not yet tagged/released)

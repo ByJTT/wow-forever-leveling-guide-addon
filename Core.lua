@@ -693,7 +693,16 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
     elseif cmd == "way" or cmd == "waypoint" then
         local sub, args = rest:match("^(%S+)%s*(.-)%s*$")
         sub = (sub or ""):lower()
-        if sub == "" or sub == "clear" or sub == "off" or sub == "remove" then
+        if sub == "" then
+            local mw = ns.charDB and ns.charDB.manualWaypoint
+            if type(mw) == "table" then
+                local xTxt = (type(mw.x) == "number") and string.format("%.1f", mw.x * 100) or "?"
+                local yTxt = (type(mw.y) == "number") and string.format("%.1f", mw.y * 100) or "?"
+                ns:Print("Manual waypoint: " .. tostring(mw.title or "waypoint") .. " (map " .. tostring(mw.mapID) .. ", " .. xTxt .. ", " .. yTxt .. "). Use /flg way clear to remove.")
+            else
+                ns:Print("No manual waypoint set. Usage: /flg way here | /flg way clear | /flg way <x> <y> | /flg way <mapID> <x> <y>")
+            end
+        elseif sub == "clear" or sub == "off" or sub == "remove" then
             ns.charDB.manualWaypoint = nil
             ns:Print("Manual waypoint cleared. Arrow will follow the current guide step when available.")
             RefreshNav()
@@ -837,7 +846,7 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("  /flg announce      - toggle chat announcements")
         ns:Print("  /flg lock          - toggle panel lock")
         ns:Print("  /flg minimap       - toggle minimap button")
-        ns:Print("  /flg where         - print current guide/step")
+        ns:Print("  /flg where         - print current guide/step status (alias: /flg status)")
         ns:Print("  /flg suggest       - suggest a next guide for your level/faction")
         ns:Print("  /flg continue      - load the next/suggested guide")
         ns:Print("  /flg way           - set/clear manual waypoint (here|clear|x y|mapID x y)")

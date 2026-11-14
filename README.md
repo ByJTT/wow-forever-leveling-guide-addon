@@ -61,7 +61,7 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 /flg lock               toggle panel lock (move/resize)
 /flg minimap            toggle minimap button
 /flg way                set/clear manual waypoint (here|clear|<x> <y>|<mapID> <x> <y>)
-/flg where              print current guide/step in chat
+/flg where              print current guide/step status in chat (alias: /flg status)
 /flg debug              print addon state/diagnostics summary
 /flg debug export       open a copyable full debug report (verification/tuning)
 /flg help               show commands
