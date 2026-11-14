@@ -24,7 +24,7 @@ Guidance for AI coding agents and automated contributors.
 ## Commands & behavior
 
 - Primary slash: `/flg` (aliases: `/levelguide`, `/journey`, `/jf`).
-- Key commands: `show|hide|toggle|list|load <key>|next|prev|skip|reset|goto <n>|continue|suggest|arrow|auto|announce|lock|minimap|way|where|debug|debug export|help`.
+- Key commands: `show|hide|toggle|list|load <key>|next|prev|skip|reset|goto <n>|continue|suggest|arrow|auto|announce|update|lock|minimap|way|where|debug|debug export|help`. Peer update notify (`/flg update`) is in-game comms-only (no internet, no auto-update); actual updates via CurseForge/WowUp/Wago when released or repo.
   - `/flg goto <n>` jumps to a step (1-based) and re-evaluates.
   - `/flg lock` toggles panel move/resize lock.
   - `/flg minimap` toggles the draggable minimap button (left-click show/hide, right-click Guides).

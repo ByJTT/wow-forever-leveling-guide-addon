@@ -1,6 +1,6 @@
 # Handoff - WoW Forever Leveling Guide Addon ByJTT
 
-> Last updated: 2026-11-13 (autopilot continue: post-v0.2.0 UI/status polish, handoff/docs refresh, commit/push; no in-game verification performed)
+> Last updated: 2026-11-13 (autopilot continue: peer update notifier, UI/status polish, docs/handoff refresh, commit/push; no in-game verification performed)
 
 ## Current state
 
@@ -12,7 +12,7 @@
 
 ## What is implemented
 
-- **Core foundation:** schema-validated per-character/profile SavedVariables, guide registry (`ns:RegisterGuide`), slash commands `/flg` (+ aliases), auto-select/suggest/continue flow, diagnostics/debug output.
+- **Core foundation:** schema-validated per-character/profile SavedVariables, guide registry (`ns:RegisterGuide`), slash commands `/flg` (+ aliases), auto-select/suggest/continue flow, diagnostics/debug output, and best-effort peer update notifications (in-game addon comms, no internet/no auto-update; toggle `/flg update`).
 - **Engine/tracker/UI/arrow:** step viewer with progress and Prev/Next/Skip/Reset/Guides controls, movable/resizable/lockable panel (with tooltips), best-effort auto-advance for quest/item/level/arrival steps, broad type/field alias support, coordinate normalization and arrival detection, best-effort navigation arrow sync and optional TomTom waypoint integration when available.
 - **Navigation & accessibility UX (v0.2.0):** draggable **minimap button** (left-click show/hide, right-click Guides, saved angle/hide, `/flg minimap`), `/flg lock`, `/flg goto <n>` (jump to step and re-evaluate), and `/flg way` **manual waypoint** override (`here|clear|<x> <y>|<mapID> <x> <y>`) that temporarily drives the arrow (shown as `[Way]`) and is persisted per character.
 - **Guide flow:** level/faction-aware selection, scaffold labeling, guide-complete suggestions, `/flg suggest`, explicit guide chaining via `next`, and `/flg continue` (loads chained next or best suggested guide). End-of-guide Next/`/flg next` can continue into next/suggested guide when available.
@@ -38,7 +38,8 @@
 - Added `/flg debug export` (copyable in-game report + UI dialog), richer debug/location/step context, offline `tools/validate_guides.py`, and verification/route-policy docs (commit `0807b59`).
 - Normalized scaffold line endings for consistency (commit `9e48826`).
 - **v0.2.0 UX/navigation polish:** added draggable minimap button (`/flg minimap`), manual waypoint override (`/flg way` with arrow `[Way]` target + debug/export state), `/flg goto <n>` step jump, `/flg lock`, UI tooltips, version bump to 0.2.0, and synchronized README/CHANGELOG/AGENTS/llms/CONTRIBUTING/HANDOFF (commit `c9bc970`, pushed). Validator passes (0 errors).
-- **Post-v0.2.0 UI/status polish (this autopilot pass):** panel progress now shows completion percentage; when a manual waypoint is active the subtitle/body clearly indicate it and remind `/flg way clear`; `/flg where` (`/flg status`) prints richer guide/step/progress/next/waypoint status; help text clarified. Docs refreshed. No in-game verification performed.
+- **Post-v0.2.0 UI/status polish:** panel progress now shows completion percentage; when a manual waypoint is active the subtitle/body clearly indicate it and remind `/flg way clear`; `/flg where` (`/flg status`) prints richer guide/step/progress/next/waypoint status; help text clarified (commit `b173598`, pushed).
+- **Peer update notifier + docs (this autopilot pass):** added best-effort in-game peer version notifications via addon comms (shared ByJTT prefix, group/raid/instance/guild), `/flg update` toggle (default on), debug/debug-export visibility, and README/CHANGELOG/AGENTS/llms/HANDOFF updates. No internet, cannot auto-update; actual updates via CurseForge/WowUp/Wago when released or GitHub repo. No in-game verification performed. Validator passes (0 errors).
 
 ## Git/remotes/push status (ecosystem)
 
@@ -49,11 +50,11 @@
 
 ## Open items / next steps
 
-1. **In-game verification on WoW Forever (required before release-quality tuning):** `/reload`, `/console scriptErrors 1`, `/flg debug` and `/flg debug export`, guide loading/list/picker, step navigation (next/prev/skip/reset/continue/suggest/goto), auto-advance, arrow/coords/manual waypoint/minimap/TomTom-optional behavior, SavedVariables persistence, and UI drag/resize/lock/show-hide across sessions. Capture exports for mismatches.
+1. **In-game verification on WoW Forever (required before release-quality tuning):** `/reload`, `/console scriptErrors 1`, `/flg debug` and `/flg debug export`, guide loading/list/picker, step navigation (next/prev/skip/reset/continue/suggest/goto), auto-advance, arrow/coords/manual waypoint/minimap/TomTom-optional behavior, SavedVariables persistence, peer update notifier behavior (`/flg update`, group/raid/instance/guild addon comms across clients/builds), and UI drag/resize/lock/show-hide across sessions. Capture exports for mismatches.
 2. **Route verification and expansion:** validate bundled starter quest IDs/coords on WoW Forever; expand scaffolds into verified, step-by-step routes with confirmed quest IDs, `mapID`s, coordinates, NPCs, breadcrumbs, and branching/race/class alternatives as needed. Keep all content original/open and clean-room (compare only high-level pacing/zone flow to established guides).
 3. **Client/API compatibility checks:** confirm quest log/map/item/player APIs and event behavior on the WoW Forever client; adjust fallbacks if any calls differ.
 4. **Polish:** further accessibility/readability passes, additional optional guide packs, and community contribution workflow for routes. Consider more validator rules as real route data matures (when safely inferable).
-5. **Release prep (when verified):** replace Buy Me a Coffee placeholder URL with the real one if/when available, bump/tag/release `v0.2.0` (or next verified SemVer) with TOC/Lua/CHANGELOG in sync.
+5. **Release prep (when verified):** replace Buy Me a Coffee placeholder URL with the real one if/when available, bump/tag/release (SemVer) with TOC/Lua/CHANGELOG in sync, and prepare CurseForge/WowUp/Wago packaging (correct `ForeverLevelingGuide/` folder + TOC, metadata, changelog, screenshots/description) as appropriate. In-game peer notifier complements addon managers but does not replace them.
 6. **Repo hygiene:** keep `BYJTT_JourneyFree` archived/research-only; do not copy proprietary third-party guide text/code into this addon.
 
 ## Notes for contributors/agents

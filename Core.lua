@@ -20,6 +20,7 @@ local defaults = {
         showArrow = true,
         autoAdvance = true,
         announce = true,
+        updateNotify = true,
         ui = {
             point = "LEFT",
             relPoint = "LEFT",
@@ -103,6 +104,7 @@ function ns:GetDB()
     db.profile.showArrow = ToBool(db.profile.showArrow, defaults.profile.showArrow)
     db.profile.autoAdvance = ToBool(db.profile.autoAdvance, defaults.profile.autoAdvance)
     db.profile.announce = ToBool(db.profile.announce, defaults.profile.announce)
+    if type(db.profile.updateNotify) ~= "boolean" then db.profile.updateNotify = defaults.profile.updateNotify end
     if type(db.profile.minimap.hide) ~= "boolean" then db.profile.minimap.hide = defaults.profile.minimap.hide end
     db.profile.minimap.angle = tonumber(db.profile.minimap.angle) or defaults.profile.minimap.angle
 
@@ -375,6 +377,194 @@ local function SafePCall(fn, ...)
     return nil
 end
 
+--------------------------------------------------------------------------------
+-- Update notifier (peer version check via addon comms; no internet/self-update)
+-- Best-effort: broadcasts this addon's version to group/raid/instance/guild and
+-- notifies once per session if a peer reports a newer version. Does not check
+-- CurseForge/GitHub directly and cannot auto-update; use CurseForge/WowUp/Wago
+-- (when released) or the repo page for actual updates.
+--------------------------------------------------------------------------------
+ns.UPDATE_COMM_PREFIX = "BYJTTVER"
+ns.UPDATE_ADDON_KEY = ns.ADDON_NAME or ADDON_NAME or "ForeverLevelingGuide"
+
+local function UP_GetTime()
+    if type(GetTime) == "function" then
+        local t = SafePCall(GetTime)
+        if type(t) == "number" then return t end
+    end
+    return 0
+end
+
+local function UP_ParseVersion(v)
+    local t = {}
+    if type(v) ~= "string" then v = tostring(v or "") end
+    for n in v:gmatch("(%d+)") do
+        t[#t + 1] = tonumber(n) or 0
+    end
+    if #t == 0 then t[1] = 0 end
+    return t
+end
+
+function ns:IsVersionNewer(remote, localv)
+    local r, l = UP_ParseVersion(remote), UP_ParseVersion(localv or self.VERSION)
+    local n = math.max(#r, #l)
+    for i = 1, n do
+        local rv, lv = r[i] or 0, l[i] or 0
+        if rv > lv then return true end
+        if rv < lv then return false end
+    end
+    return false
+end
+
+local function UP_PlayerName()
+    if type(UnitName) ~= "function" then return nil end
+    local name = SafePCall(UnitName, "player")
+    if type(name) ~= "string" or name == "" then return nil end
+    return name
+end
+
+local function UP_IsSelfSender(sender)
+    if type(sender) ~= "string" or sender == "" then return false end
+    local me = UP_PlayerName()
+    if not me then return false end
+    if sender == me then return true end
+    local sshort = sender:match("^([^%-]+)") or sender
+    if sshort == me then return true end
+    if type(Ambiguate) == "function" then
+        local a = SafePCall(Ambiguate, sender, "short")
+        if a == me then return true end
+    end
+    return false
+end
+
+function ns:RegisterUpdatePrefix()
+    if self._updatePrefixRegistered then return true end
+    local prefix = self.UPDATE_COMM_PREFIX
+    local ok = false
+    if C_ChatInfo and type(C_ChatInfo.RegisterAddonMessagePrefix) == "function" then
+        ok = SafePCall(C_ChatInfo.RegisterAddonMessagePrefix, prefix) ~= nil or true
+        if C_ChatInfo.IsAddonMessagePrefixRegistered then
+            local reg = SafePCall(C_ChatInfo.IsAddonMessagePrefixRegistered, prefix)
+            if reg ~= nil then ok = reg and true or ok end
+        end
+    elseif type(RegisterAddonMessagePrefix) == "function" then
+        ok = SafePCall(RegisterAddonMessagePrefix, prefix) ~= nil or true
+    end
+    self._updatePrefixRegistered = ok and true or false
+    return self._updatePrefixRegistered
+end
+
+local function UP_CanChatSend()
+    local inInstance = false
+    if type(IsInGroup) == "function" and type(LE_PARTY_CATEGORY_INSTANCE) == "number" then
+        inInstance = SafePCall(IsInGroup, LE_PARTY_CATEGORY_INSTANCE) and true or false
+    elseif type(IsInInstance) == "function" then
+        local _, it = SafePCall(IsInInstance)
+        inInstance = (it == "party" or it == "raid" or it == "scenario" or it == "pvp" or it == "arena")
+    end
+    local inRaid = type(IsInRaid) == "function" and SafePCall(IsInRaid) and true or false
+    local inParty = type(IsInGroup) == "function" and SafePCall(IsInGroup) and true or false
+    local inGuild = type(IsInGuild) == "function" and SafePCall(IsInGuild) and true or false
+    if type(GetNumGroupMembers) == "function" then
+        local n = SafePCall(GetNumGroupMembers) or 0
+        if n <= 1 then inRaid, inParty = false, false end
+    elseif type(GetNumRaidMembers) == "function" or type(GetNumPartyMembers) == "function" then
+        local rn = (type(GetNumRaidMembers) == "function" and SafePCall(GetNumRaidMembers)) or 0
+        local pn = (type(GetNumPartyMembers) == "function" and SafePCall(GetNumPartyMembers)) or 0
+        if rn <= 0 then inRaid = false end
+        if pn <= 0 and rn <= 0 then inParty = false end
+    end
+    return inInstance, inRaid, inParty, inGuild
+end
+
+function ns:BroadcastVersionUpdate(force)
+    if self.profile and self.profile.updateNotify == false then return false end
+    self:RegisterUpdatePrefix()
+    local now = UP_GetTime()
+    local last = tonumber(self._updateLastSend) or 0
+    local minGap = 60
+    if not force and (now - last) < minGap then return false end
+
+    local prefix = self.UPDATE_COMM_PREFIX
+    local msg = tostring(self.UPDATE_ADDON_KEY or self.ADDON_NAME or "Addon") .. ":" .. tostring(self.VERSION or "0")
+    local sentAny = false
+
+    local function send(chatType)
+        if not chatType then return false end
+        if C_ChatInfo and type(C_ChatInfo.SendAddonMessage) == "function" then
+            local ok = pcall(C_ChatInfo.SendAddonMessage, prefix, msg, chatType)
+            return ok and true or false
+        elseif type(SendAddonMessage) == "function" then
+            local ok = pcall(SendAddonMessage, prefix, msg, chatType)
+            return ok and true or false
+        end
+        return false
+    end
+
+    local inInstance, inRaid, inParty, inGuild = UP_CanChatSend()
+    if inInstance then sentAny = send("INSTANCE_CHAT") or sentAny end
+    if inRaid then sentAny = send("RAID") or sentAny end
+    if inParty and not inRaid then sentAny = send("PARTY") or sentAny end
+    if inGuild then sentAny = send("GUILD") or sentAny end
+
+    self._updateLastSend = now
+    if sentAny then self._updateLastSentAny = true end
+    self._updateReady = true
+    return sentAny
+end
+
+function ns:ScheduleVersionBroadcast(delay, force)
+    if self.profile and self.profile.updateNotify == false then return end
+    local d = tonumber(delay) or 8
+    local function run()
+        if not self.profile or self.profile.updateNotify == false then return end
+        self:BroadcastVersionUpdate(force and true or false)
+    end
+    if C_Timer and type(C_Timer.After) == "function" then
+        SafePCall(C_Timer.After, d, run)
+    else
+        local f = self._updateDelayFrame
+        if not f and type(CreateFrame) == "function" then
+            f = CreateFrame("Frame")
+            self._updateDelayFrame = f
+        end
+        if f then
+            f._t = 0
+            f._d = d
+            f:SetScript("OnUpdate", function(fr, elapsed)
+                fr._t = (fr._t or 0) + (elapsed or 0)
+                if fr._t >= (fr._d or 0) then
+                    fr:SetScript("OnUpdate", nil)
+                    run()
+                end
+            end)
+        else
+            run()
+        end
+    end
+end
+
+function ns:HandleVersionAddonMessage(prefix, message, channel, sender)
+    if prefix ~= self.UPDATE_COMM_PREFIX then return end
+    if type(message) ~= "string" or message == "" then return end
+    if UP_IsSelfSender(sender) then return end
+    local key, ver = message:match("^([^:]+):(.+)$")
+    if not key or not ver then return end
+    local myKey = tostring(self.UPDATE_ADDON_KEY or self.ADDON_NAME or "")
+    if key ~= myKey then return end
+
+    local mine = tostring(self.VERSION or "0")
+    if self:IsVersionNewer(ver, mine) then
+        self._updateNewest = ver
+        if self.profile and self.profile.updateNotify ~= false and self._updateNotified ~= ver then
+            self._updateNotified = ver
+            local name = tostring(self.ADDON_NAME or "ForeverLevelingGuide")
+            local repo = tostring(self.REPO or "https://github.com/ByJTT/wow-forever-leveling-guide-addon")
+            self:Print("|cff88ddffUpdate available:|r " .. name .. " v" .. tostring(ver) .. " (you have v" .. mine .. "). Update via CurseForge/WowUp/Wago when released, or: " .. repo)
+        end
+    end
+end
+
 local function NormalizeCoord01(v)
     local n = tonumber(v)
     if n == nil then return nil end
@@ -485,7 +675,7 @@ function ns:BuildDebugReport()
     add("Guides loaded: " .. SafeToString(#keys))
     add("Current guide key: " .. SafeToString(key))
     add("Step index: " .. SafeToString(idx) .. " / " .. SafeToString(total))
-    add("Settings: arrow=" .. SafeToString(profile and profile.showArrow) .. " autoAdvance=" .. SafeToString(profile and profile.autoAdvance) .. " announce=" .. SafeToString(profile and profile.announce) .. " locked=" .. SafeToString(profile and profile.locked))
+    add("Settings: arrow=" .. SafeToString(profile and profile.showArrow) .. " autoAdvance=" .. SafeToString(profile and profile.autoAdvance) .. " announce=" .. SafeToString(profile and profile.announce) .. " updateNotify=" .. SafeToString(profile and profile.updateNotify) .. " locked=" .. SafeToString(profile and profile.locked))
     if profile and profile.minimap then
         add("Minimap: hide=" .. SafeToString(profile.minimap.hide) .. " angle=" .. SafeToString(profile.minimap.angle))
     end
@@ -589,6 +779,12 @@ function ns:BuildDebugReport()
     end
 
     add("")
+    add("[Update Notifier]")
+    add("Peer check only (no internet/self-update). Use CurseForge/WowUp/Wago when released or repo for actual updates.")
+    add("updateNotify=" .. SafeToString(profile and profile.updateNotify) .. " prefix=" .. SafeToString(self.UPDATE_COMM_PREFIX) .. " key=" .. SafeToString(self.UPDATE_ADDON_KEY) .. " prefixRegistered=" .. SafeToString(self._updatePrefixRegistered) .. " lastSentAny=" .. SafeToString(self._updateLastSentAny))
+    add("newestSeen=" .. SafeToString(self._updateNewest) .. " notified=" .. SafeToString(self._updateNotified))
+
+    add("")
     add("Hints: compare route flow relatively (pacing/zone order) to established leveling guides, but keep all step text/structure original and verify quest IDs/mapIDs/coords in-game on WoW Forever. Use /flg list, /flg continue, /flg suggest, /flg goto, /flg way, and /reload after data changes.")
 
     return table.concat(lines, "\n")
@@ -608,13 +804,20 @@ end
 local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
+eventFrame:RegisterEvent("CHAT_MSG_ADDON")
+eventFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+eventFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
 
-eventFrame:SetScript("OnEvent", function(_, event, arg1)
+eventFrame:SetScript("OnEvent", function(_, event, arg1, arg2, arg3, arg4)
     if event == "ADDON_LOADED" and arg1 == ADDON_NAME then
         ns:GetDB()
         if ns.OnInit then ns:OnInit() end
     elseif event == "PLAYER_LOGIN" then
         if ns.OnLogin then ns:OnLogin() end
+    elseif event == "CHAT_MSG_ADDON" then
+        if ns.HandleVersionAddonMessage then ns:HandleVersionAddonMessage(arg1, arg2, arg3, arg4) end
+    elseif event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_ENTERING_WORLD" then
+        if ns.ScheduleVersionBroadcast then ns:ScheduleVersionBroadcast(12, false) end
     end
 end)
 
@@ -748,6 +951,10 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
     elseif cmd == "announce" then
         ns.profile.announce = not ns.profile.announce
         ns:Print("Chat announcements: " .. (ns.profile.announce and "|cff88ff88ON|r" or "|cffff8888OFF|r"))
+    elseif cmd == "update" or cmd == "updates" or cmd == "updatenotify" or cmd == "notify" then
+        ns.profile.updateNotify = not ns.profile.updateNotify
+        ns:Print("Update notifications (peer, no internet): " .. (ns.profile.updateNotify and "|cff88ff88ON|r" or "|cffff8888OFF|r") .. ". Checks group/guild/instance peers; get updates via CurseForge/WowUp/Wago when released or repo.")
+        if ns.profile.updateNotify and ns.BroadcastVersionUpdate then ns:BroadcastVersionUpdate(true) end
     elseif cmd == "where" or cmd == "status" or cmd == "current" then
         if ns.UI and ns.UI.PrintStatus then ns.UI:PrintStatus() end
     elseif cmd == "suggest" then
@@ -783,7 +990,10 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("Player: " .. tostring(faction) .. " level " .. tostring(playerLevel))
         ns:Print("Guide: " .. tostring(key or "none") .. " | step " .. tostring(idx) .. "/" .. tostring(total) .. " | type: " .. stepType)
         local mm = (ns.profile and ns.profile.minimap and not ns.profile.minimap.hide) and "on" or "hidden"
-        ns:Print("Settings: arrow=" .. tostring(ns.profile.showArrow) .. " auto=" .. tostring(ns.profile.autoAdvance) .. " announce=" .. tostring(ns.profile.announce) .. " locked=" .. tostring(ns.profile.locked) .. " minimap=" .. mm)
+        ns:Print("Settings: arrow=" .. tostring(ns.profile.showArrow) .. " auto=" .. tostring(ns.profile.autoAdvance) .. " announce=" .. tostring(ns.profile.announce) .. " update=" .. tostring(ns.profile.updateNotify) .. " locked=" .. tostring(ns.profile.locked) .. " minimap=" .. mm)
+        if ns._updateNewest and ns._updateNewest ~= "" then
+            ns:Print("Update (peer): newer version seen v" .. tostring(ns._updateNewest) .. " (you have v" .. tostring(ns.VERSION) .. ")")
+        end
         ns:Print("Guides loaded: " .. tostring(#ns:GetSortedGuideKeys()))
         if guide and guide.title then ns:Print("Current title: " .. tostring(guide.title)) end
         if guide and guide.scaffold then ns:Print("Note: this is an original scaffold route (WIP). Verify and expand steps for your WoW Forever build.") end
@@ -844,6 +1054,7 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         ns:Print("  /flg arrow         - toggle navigation arrow")
         ns:Print("  /flg auto          - toggle auto-advance")
         ns:Print("  /flg announce      - toggle chat announcements")
+        ns:Print("  /flg update        - toggle peer update notifications (no internet)")
         ns:Print("  /flg lock          - toggle panel lock")
         ns:Print("  /flg minimap       - toggle minimap button")
         ns:Print("  /flg where         - print current guide/step status (alias: /flg status)")
@@ -861,10 +1072,12 @@ end
 function ns:OnInit()
     self.Guides = self.Guides or {}
     if self.RegisterBundledGuides then self:RegisterBundledGuides() end
+    if self.RegisterUpdatePrefix then self:RegisterUpdatePrefix() end
 end
 
 function ns:OnLogin()
     if not self.db then self:GetDB() end
+    if self.RegisterUpdatePrefix then self:RegisterUpdatePrefix() end
 
     if self.charDB and self.charDB.guideKey and not self:GetGuide(self.charDB.guideKey) then
         self.charDB.guideKey = nil
@@ -886,4 +1099,5 @@ function ns:OnLogin()
     if self.Arrow and self.Arrow.Initialize then self.Arrow:Initialize() end
 
     self:Print("Loaded v" .. self.VERSION .. " " .. self.BYLINE .. " (ByJTT, original open routes). Type /flg for help.")
+    if self.ScheduleVersionBroadcast then self:ScheduleVersionBroadcast(10, true) end
 end

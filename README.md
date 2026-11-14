@@ -58,6 +58,7 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 /flg arrow              toggle navigation arrow
 /flg auto               toggle auto-advance
 /flg announce           toggle chat announcements
+/flg update             toggle peer update notifications (in-game, no internet)
 /flg lock               toggle panel lock (move/resize)
 /flg minimap            toggle minimap button
 /flg way                set/clear manual waypoint (here|clear|<x> <y>|<mapID> <x> <y>)
@@ -125,6 +126,7 @@ ns:RegisterGuide("my_guide_key", {
 - **Routes are open & original:** bundled 1-10 guides are samples and 10-60 guides are chained scaffolds/WIP; bracket/zone flow is compared at a high level to established leveling guides for pacing, but all step text/structure is original/clean-room. Comprehensive, tuned routes are community/extensible and must be verified on WoW Forever.
 - **Optional waypoint integration:** if TomTom is installed, the addon can set a best-effort waypoint for the current step target (no dependency required). Native arrow behavior remains best-effort and client/API dependent.
 - **Manual waypoint vs step target:** `/flg way` sets a temporary manual waypoint that overrides the arrow target until cleared (`/flg way clear`).
+- **Updates (in-game peer check, best-effort):** the addon can notify you (once per session) if a group/raid/instance/guild peer is running a newer version of this addon (toggle: `/flg update`, on by default). This uses addon messages only - **no internet access**, it cannot detect a new GitHub/CurseForge release when you are solo, and it cannot auto-install updates. For actual release updates, use an addon manager such as **CurseForge**, **WowUp**, or **Wago** when the addon is published there, or download/check releases from the [GitHub repo](https://github.com/ByJTT/wow-forever-leveling-guide-addon).
 
 ## Troubleshooting
 
