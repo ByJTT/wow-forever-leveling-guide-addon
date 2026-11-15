@@ -1,11 +1,14 @@
 ﻿local ADDON_NAME, ns = ...
 
 ns.ADDON_NAME = ADDON_NAME
+ns.DISPLAY_NAME = "WoW Forever Leveling Guide Addon ByJTT"
 ns.VERSION = "0.2.0"
 ns.SCHEMA = 1
-ns.PREFIX = "|cff4dd0ffForeverLevelingGuide|r"
+ns.PREFIX = "|cff4dd0ffByJTT Leveling Guide|r"
 ns.BYLINE = "by ByJTT"
 ns.REPO = "https://github.com/ByJTT/wow-forever-leveling-guide-addon"
+ns.WEB = "https://byjtt.com"
+ns.SUPPORT = "https://buymeacoffee.com/ByJTT"
 
 local defaults = {
     char = {
@@ -21,6 +24,8 @@ local defaults = {
         autoAdvance = true,
         announce = true,
         updateNotify = true,
+        welcomeSeen = false,
+        welcomeDismissed = false,
         ui = {
             point = "LEFT",
             relPoint = "LEFT",
@@ -105,6 +110,8 @@ function ns:GetDB()
     db.profile.autoAdvance = ToBool(db.profile.autoAdvance, defaults.profile.autoAdvance)
     db.profile.announce = ToBool(db.profile.announce, defaults.profile.announce)
     if type(db.profile.updateNotify) ~= "boolean" then db.profile.updateNotify = defaults.profile.updateNotify end
+    if type(db.profile.welcomeSeen) ~= "boolean" then db.profile.welcomeSeen = defaults.profile.welcomeSeen end
+    if type(db.profile.welcomeDismissed) ~= "boolean" then db.profile.welcomeDismissed = defaults.profile.welcomeDismissed end
     if type(db.profile.minimap.hide) ~= "boolean" then db.profile.minimap.hide = defaults.profile.minimap.hide end
     db.profile.minimap.angle = tonumber(db.profile.minimap.angle) or defaults.profile.minimap.angle
 
@@ -826,6 +833,68 @@ SLASH_FOREVERLEVELINGGUIDE2 = "/levelguide"
 SLASH_FOREVERLEVELINGGUIDE3 = "/journey"
 SLASH_FOREVERLEVELINGGUIDE4 = "/jf"
 
+function ns:ResetWindowPosition()
+    if not self.profile then self:GetDB() end
+    if type(self.profile.ui) ~= "table" then
+        self.profile.ui = {}
+        DeepCopyDefaults(defaults.profile.ui, self.profile.ui)
+    end
+    self.profile.ui.point = defaults.profile.ui.point
+    self.profile.ui.relPoint = defaults.profile.ui.relPoint
+    self.profile.ui.x = defaults.profile.ui.x
+    self.profile.ui.y = defaults.profile.ui.y
+    self.profile.ui.width = defaults.profile.ui.width
+    self.profile.ui.height = defaults.profile.ui.height
+    self.profile.ui.shown = true
+    self.profile.locked = defaults.profile.locked
+    if self.UI and self.UI.ApplyLayout then self.UI:ApplyLayout() end
+    if self.UI and self.UI.Refresh then self.UI:Refresh() end
+    self:Print("Guide window position and size reset.")
+end
+
+function ns:ResetAddonSettings()
+    if not self.profile then self:GetDB() end
+    local ui = self.profile.ui or {}
+    local keepShown = ui.shown
+    local keepPoint = ui.point
+    local keepRel = ui.relPoint
+    local keepX = ui.x
+    local keepY = ui.y
+    local keepW = ui.width
+    local keepH = ui.height
+
+    self.profile.locked = defaults.profile.locked
+    self.profile.showArrow = defaults.profile.showArrow
+    self.profile.autoAdvance = defaults.profile.autoAdvance
+    self.profile.announce = defaults.profile.announce
+    self.profile.updateNotify = defaults.profile.updateNotify
+    self.profile.welcomeSeen = defaults.profile.welcomeSeen
+    self.profile.welcomeDismissed = defaults.profile.welcomeDismissed
+
+    self.profile.minimap = self.profile.minimap or {}
+    self.profile.minimap.hide = defaults.profile.minimap.hide
+    self.profile.minimap.angle = defaults.profile.minimap.angle
+
+    -- Keep window layout/progress by default (safer for non-technical users).
+    if type(self.profile.ui) ~= "table" then
+        self.profile.ui = {}
+        DeepCopyDefaults(defaults.profile.ui, self.profile.ui)
+    end
+    self.profile.ui.shown = (keepShown ~= nil) and keepShown or defaults.profile.ui.shown
+    self.profile.ui.point = keepPoint or defaults.profile.ui.point
+    self.profile.ui.relPoint = keepRel or defaults.profile.ui.relPoint
+    self.profile.ui.x = keepX or defaults.profile.ui.x
+    self.profile.ui.y = keepY or defaults.profile.ui.y
+    self.profile.ui.width = keepW or defaults.profile.ui.width
+    self.profile.ui.height = keepH or defaults.profile.ui.height
+
+    if self.UI and self.UI.ApplyLayout then self.UI:ApplyLayout() end
+    if self.UI and self.UI.Refresh then self.UI:Refresh() end
+    if self.UI and self.UI.UpdateMinimapButton then self.UI:UpdateMinimapButton() end
+    if self.Arrow and self.Arrow.Update then self.Arrow:Update() end
+    self:Print("Addon settings reset to defaults (guide progress and window position kept). Type /flg config for settings or /flg resetui to reset the window.")
+end
+
 SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
     msg = tostring(msg or "")
     msg = msg:gsub("^%s+", ""):gsub("%s+$", "")
@@ -850,20 +919,42 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
         if ns.Arrow and ns.Arrow.Update then ns.Arrow:Update() end
     end
 
-    if cmd == "" or cmd == "show" or cmd == "config" or cmd == "open" then
+    if cmd == "" or cmd == "show" or cmd == "open" then
         if ns.UI and ns.UI.Show then ns.UI:Show() end
     elseif cmd == "hide" or cmd == "close" then
         if ns.UI and ns.UI.Hide then ns.UI:Hide() end
     elseif cmd == "toggle" then
         if ns.UI and ns.UI.Toggle then ns.UI:Toggle() end
+    elseif cmd == "config" or cmd == "options" or cmd == "settings" then
+        if ns.UI and ns.UI.OpenOptions then
+            ns.UI:OpenOptions()
+        elseif ns.UI and ns.UI.Show then
+            ns.UI:Show()
+            ns:Print("Settings panel unavailable on this client. Use /flg help for commands.")
+        end
+    elseif cmd == "onboarding" or cmd == "welcome" then
+        if ns.profile then
+            ns.profile.welcomeSeen = false
+            ns.profile.welcomeDismissed = false
+        end
+        if ns.UI and ns.UI.ShowWelcome then
+            ns.UI:ShowWelcome(true)
+        elseif ns.UI and ns.UI.Show then
+            ns.UI:Show()
+            ns:Print("Welcome guide: use Guides to pick a route, follow each step, and use /flg help for commands.")
+        end
     elseif cmd == "next" or cmd == "n" then
         if ns.Engine and ns.Engine.NextStep then ns.Engine:NextStep("manual") end
     elseif cmd == "prev" or cmd == "previous" or cmd == "back" or cmd == "p" then
         if ns.Engine and ns.Engine.PrevStep then ns.Engine:PrevStep() end
     elseif cmd == "skip" then
         if ns.Engine and ns.Engine.SkipStep then ns.Engine:SkipStep() end
-    elseif cmd == "reset" then
+    elseif cmd == "reset" or cmd == "resetprogress" or cmd == "resetguide" then
         if ns.Engine and ns.Engine.ResetProgress then ns.Engine:ResetProgress() end
+    elseif cmd == "resetui" or cmd == "resetwindow" or cmd == "resetposition" or cmd == "resetpos" then
+        ns:ResetWindowPosition()
+    elseif cmd == "resetdefaults" or cmd == "resetsettings" then
+        ns:ResetAddonSettings()
     elseif cmd == "goto" or cmd == "step" or cmd == "jump" then
         local n = tonumber(rest:match("^(%-?%d+)"))
         if not n then
@@ -1043,29 +1134,31 @@ SlashCmdList.FOREVERLEVELINGGUIDE = function(msg)
             ns:Print("Tip: /flg debug export - open a copyable full report for WoW Forever verification/tuning.")
         end
     elseif cmd == "help" or cmd == "?" then
-        ns:Print("ForeverLevelingGuide " .. ns.BYLINE .. " (v" .. ns.VERSION .. ")")
-        ns:Print("Commands:")
-        ns:Print("  /flg               - show guide panel")
-        ns:Print("  /flg show|hide|toggle - panel visibility")
-        ns:Print("  /flg list          - list available guides")
-        ns:Print("  /flg load <key>    - load a guide")
-        ns:Print("  /flg next|prev|skip|reset - step controls")
-        ns:Print("  /flg goto <n>      - jump to step number")
-        ns:Print("  /flg arrow         - toggle navigation arrow")
-        ns:Print("  /flg auto          - toggle auto-advance")
-        ns:Print("  /flg announce      - toggle chat announcements")
-        ns:Print("  /flg update        - toggle peer update notifications (no internet)")
-        ns:Print("  /flg lock          - toggle panel lock")
-        ns:Print("  /flg minimap       - toggle minimap button")
-        ns:Print("  /flg where         - print current guide/step status (alias: /flg status)")
-        ns:Print("  /flg suggest       - suggest a next guide for your level/faction")
-        ns:Print("  /flg continue      - load the next/suggested guide")
-        ns:Print("  /flg way           - set/clear manual waypoint (here|clear|x y|mapID x y)")
-        ns:Print("  /flg debug         - diagnostics summary")
-        ns:Print("  /flg debug export  - copyable full debug report (verification/tuning)")
-        ns:Print("Aliases: /levelguide, /journey, /jf")
+        ns:Print((ns.DISPLAY_NAME or ns.ADDON_NAME) .. " " .. ns.BYLINE .. " (v" .. ns.VERSION .. ") - quick help")
+        if DEFAULT_CHAT_FRAME and DEFAULT_CHAT_FRAME.AddMessage then
+            local function line(s) DEFAULT_CHAT_FRAME:AddMessage("  " .. s) end
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100How to use:|r pick a guide, follow each step, and use the arrow/waypoint to travel. Routes marked |cff888888scaffold/WIP|r are original outlines and need WoW Forever in-game verification.")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Basic:|r")
+            line("/flg - show guide panel")
+            line("/flg config - open settings")
+            line("/flg list | /flg load <key> - browse and load guides")
+            line("/flg continue | /flg suggest - load next or recommended guide")
+            line("/flg next|prev|skip|goto <n> - step controls (/flg reset restarts this guide)")
+            line("/flg where - show current guide/step status")
+            line("/flg onboarding - show the welcome guide again")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Navigation & options:|r")
+            line("/flg arrow | /flg minimap | /flg lock - toggle arrow, minimap button, panel lock")
+            line("/flg auto | /flg announce | /flg update - toggle auto-advance, chat announcements, peer update checks")
+            line("/flg way here|clear|<x> <y>|<mapID> <x> <y> - set or clear a manual waypoint")
+            line("/flg resetui - reset window position/size")
+            line("/flg resetdefaults - reset addon settings (keeps guide progress)")
+            DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Advanced:|r")
+            line("/flg debug | /flg debug export - diagnostics and copyable verification report")
+            line("/flg show|hide|toggle - panel visibility")
+            DEFAULT_CHAT_FRAME:AddMessage("|cff888888Aliases: /levelguide, /journey, /jf. Actual addon updates install via CurseForge/WowUp/Wago when released, or from the repo (peer notify is best-effort, no internet).|r")
+        end
     else
-        ns:Print("Unknown command: " .. tostring(cmd) .. ". Try /flg help")
+        ns:Print("Unknown command: " .. tostring(cmd) .. ". Type /flg help for commands.")
     end
 end
 

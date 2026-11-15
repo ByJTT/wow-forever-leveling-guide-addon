@@ -4,6 +4,7 @@
 ## Author: ByJTT
 ## Version: 0.2.0
 ## SavedVariables: ForeverLevelingGuideDB
+## IconTexture: 134269
 ## X-Category: Quests & Leveling
 ## X-License: MIT
 ## X-Website: https://github.com/ByJTT/wow-forever-leveling-guide-addon

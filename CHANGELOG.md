@@ -8,11 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **In-game settings panel (Blizzard-native + fallback):** `/flg config` opens a settings UI (Blizzard Settings/InterfaceOptions when available, standalone movable fallback otherwise) with toggles for navigation arrow, auto-advance, chat announcements, minimap button, panel lock, and peer update notifications, plus quick actions (open Guides, show Welcome, reset window, reset settings, debug export) and About/support links.
+- **Welcome/onboarding guide (all skill levels):** short, re-openable welcome dialog explaining the happy path, controls, and scaffold/WIP note; shown on first run and available via `/flg onboarding` (`/flg welcome`).
+- **Easy recovery commands:** `/flg resetui` (`resetwindow`/`resetposition`/`resetpos`) resets window position/size, and `/flg resetdefaults` (`resetsettings`) resets addon settings to defaults while keeping guide progress and window layout. `/flg reset` remains guide-progress reset.
 - **Peer update notifications (best-effort, no internet):** in-game version check via addon comms with group/raid/instance/guild peers (shared ByJTT prefix). Notifies once per session if a peer runs a newer version. Toggle with `/flg update` (on by default). This does **not** check CurseForge/GitHub directly and cannot auto-install updates - use CurseForge/WowUp/Wago (when released) or the GitHub repo for actual updates.
 - **UI/status clarity:** guide progress now shows a completion percentage in the panel; when a manual waypoint is active, the panel subtitle shows a `[Waypoint]` indicator and the body displays a clear reminder with `/flg way clear` to return to step guidance. `/flg where` (`/flg status`) now prints richer status (guide/key/level range/scaffold state, progress %, current step/type/zone, next guide when complete, and active manual waypoint). `/flg way` with no arguments now shows the current manual waypoint (or usage) instead of clearing it.
-- **CurseForge/packager prep:** added `.pkgmeta` for clean release packaging (`ForeverLevelingGuide/` folder, repo/docs/dev/tools files ignored).
+- **CurseForge/packager prep:** added `.pkgmeta` for clean release packaging (`ForeverLevelingGuide/` folder, repo/docs/dev/tools files ignored) and `## IconTexture` to the TOC. Added `BYJTT_WOW_ADDON_STANDARD.md` (shared ByJTT UX/quality conventions).
 
-- In-game verification/tuning on WoW Forever pending (APIs/events, mapIDs/coords/quest IDs, UI/arrow/minimap/waypoint behavior per client, and peer update-notify behavior).
+### Changed
+- **Consistent help and chat voice:** `/flg help` is grouped (How to use / Basic / Navigation & options / Advanced) with plain-language guidance, and chat prefix/branding aligned to the ByJTT suite (`ByJTT Leveling Guide`).
+
+- In-game verification/tuning on WoW Forever pending (APIs/events, mapIDs/coords/quest IDs, UI/arrow/minimap/waypoint/settings/onboarding behavior per client, and peer update-notify behavior).
 
 ## [0.2.0] - 2026-11-13 (local, not yet tagged/released)
 

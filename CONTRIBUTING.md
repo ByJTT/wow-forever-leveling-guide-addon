@@ -25,15 +25,17 @@ Please include:
 ## Pull requests
 
 1. Branch from `main`/`master` as appropriate. Keep PRs focused.
-2. Test in game (WoW Forever): `/reload`, `/console scriptErrors 1`, `/flg list`, `/flg load <key>`, step navigation (next/prev/skip/reset/goto/continue/suggest), arrow/manual waypoint, minimap button, auto-advance behavior, and `/flg debug`/`/flg debug export`.
+2. Test in game (WoW Forever): `/reload`, `/console scriptErrors 1`, `/flg list`, `/flg load <key>`, step navigation (next/prev/skip/reset/goto/continue/suggest), settings panel (`/flg config`), onboarding (`/flg onboarding`), arrow/manual waypoint, minimap button, panel lock/resetui/resetdefaults, auto-advance behavior, and `/flg debug`/`/flg debug export`.
 3. Run offline checks when route/data files change: `python tools/validate_guides.py`.
 4. Update `CHANGELOG.md` for user-visible changes.
-5. For route contributions, prefer accurate `mapID`/coords, clear notes, and original/open route data (no guessed real in-game IDs/coords without verification).
+5. Follow `BYJTT_WOW_ADDON_STANDARD.md` for UX/consistency (help/voice, settings, accessibility, update messaging). For route contributions, prefer accurate `mapID`/coords, clear notes, and original/open route data (no guessed real in-game IDs/coords without verification).
 
 ## Local dev tips
 
 ```text
 /flg help
+/flg config
+/flg onboarding
 /flg list
 /flg load horde_01_10_durotar
 /flg goto 1

@@ -24,12 +24,15 @@ Guidance for AI coding agents and automated contributors.
 ## Commands & behavior
 
 - Primary slash: `/flg` (aliases: `/levelguide`, `/journey`, `/jf`).
-- Key commands: `show|hide|toggle|list|load <key>|next|prev|skip|reset|goto <n>|continue|suggest|arrow|auto|announce|update|lock|minimap|way|where|debug|debug export|help`. Peer update notify (`/flg update`) is in-game comms-only (no internet, no auto-update); actual updates via CurseForge/WowUp/Wago when released or repo.
+- Key commands: `show|hide|toggle|config|options|settings|onboarding|welcome|list|load <key>|next|prev|skip|reset|resetui|resetdefaults|goto <n>|continue|suggest|arrow|auto|announce|update|lock|minimap|way|where|status|debug|debug export|help`. Peer update notify (`/flg update`) is in-game comms-only (no internet, no auto-update); actual updates via CurseForge/WowUp/Wago when released or repo.
+  - `/flg config` opens settings (Blizzard Settings/InterfaceOptions when available, standalone movable fallback otherwise).
+  - `/flg onboarding` (`/flg welcome`) shows a short, re-openable welcome guide (also offered on first run).
+  - `/flg reset` resets guide progress for the current character/guide; `/flg resetui` resets window position/size; `/flg resetdefaults` resets addon settings to defaults while keeping guide progress and window layout.
   - `/flg goto <n>` jumps to a step (1-based) and re-evaluates.
   - `/flg lock` toggles panel move/resize lock.
   - `/flg minimap` toggles the draggable minimap button (left-click show/hide, right-click Guides).
   - `/flg way here|clear|<x> <y>|<mapID> <x> <y>` sets/clears a temporary manual waypoint that overrides the arrow target.
-- UI includes an in-panel **Guides** picker and a minimap launcher for quick access.
+- UI includes an in-panel **Guides** picker, minimap launcher, settings panel, and a first-run welcome guide for quick/discoverable access.
 - Routes are registered via `ns:RegisterGuide(key, guide)` in `Data/*.lua` and listed in the TOC. Guides may include `scaffold=true` for WIP placeholders and `next` to chain to the following guide.
 - Engine supports broad step type/field alias support (quest accept/complete/turnin, goto/travel/path/waypoint arrival, level, collect/item counts, and manual/info steps). Bundled routes include 1-10 starters and original 10-60 chained scaffold placeholders for in-game-verified expansion. Auto-advance is best-effort; manual controls always work.
 - Guide flow includes level/faction-aware auto-selection, guide chaining (`next`) with `/flg continue`, `/flg suggest` and guide-complete next suggestions, and optional best-effort TomTom waypoint integration when available (no dependency). All route/content code must remain original/open.

@@ -87,6 +87,7 @@ local function SetSimpleTooltip(frameOrBtn, title, text)
         if text and text ~= "" then
             GameTooltip:AddLine(tostring(text), 1, 1, 1, true)
         end
+        GameTooltip:AddLine("|cff888888ByJTT Leveling Guide|r", 0.55, 0.55, 0.55)
         GameTooltip:Show()
     end)
     frameOrBtn:HookScript("OnLeave", function()
@@ -626,6 +627,10 @@ function UI:Show()
     if ns.profile and ns.profile.ui then ns.profile.ui.shown = true end
     self:Refresh()
     if ns.Arrow and ns.Arrow.Update then ns.Arrow:Update() end
+
+    if ns.profile and not ns.profile.welcomeSeen and not ns.profile.welcomeDismissed and self.ShowWelcome then
+        self:ShowWelcome(false)
+    end
 end
 
 function UI:Hide()
@@ -859,13 +864,13 @@ function UI:UpdateMinimapButton()
         b:SetScript("OnEnter", function(selfBtn)
             if not GameTooltip then return end
             GameTooltip:SetOwner(selfBtn, "ANCHOR_LEFT")
-            GameTooltip:AddLine("|cff4dd0ffForeverLevelingGuide|r", 1, 1, 1)
-            GameTooltip:AddLine("by ByJTT - original open routes", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine("|cff4dd0ffByJTT Leveling Guide|r", 1, 1, 1)
+            GameTooltip:AddLine("Step-by-step leveling guidance (original open routes)", 0.8, 0.8, 0.8, true)
             GameTooltip:AddLine(" ")
             GameTooltip:AddLine("|cffffd100Left Click:|r Show/Hide guide panel", 0.95, 0.95, 0.95)
             GameTooltip:AddLine("|cffffd100Right Click:|r Open Guides list", 0.95, 0.95, 0.95)
             GameTooltip:AddLine("|cffffd100Drag:|r Move this button", 0.95, 0.95, 0.95)
-            GameTooltip:AddLine("|cff888888/flg minimap toggles visibility|r", 0.75, 0.75, 0.75)
+            GameTooltip:AddLine("|cff888888/flg config for settings - /flg help for commands|r", 0.65, 0.65, 0.65)
             GameTooltip:Show()
         end)
         b:SetScript("OnLeave", function()
@@ -919,4 +924,326 @@ function UI:Initialize()
     self:Create()
     self:Refresh()
     self:UpdateMinimapButton()
+
+    if ns.profile and not ns.profile.welcomeSeen and not ns.profile.welcomeDismissed and frame and frame:IsShown() and self.ShowWelcome then
+        self:ShowWelcome(false)
+    end
+end
+
+function UI:ApplyLayout()
+    self:Create()
+    if not frame then return end
+
+    local profile = ns.profile or {}
+    local ui = profile.ui or {}
+    local w = Clamp(ToNumber(ui.width) or 380, 300, 700)
+    local h = Clamp(ToNumber(ui.height) or 260, 180, 600)
+
+    frame:ClearAllPoints()
+    frame:SetSize(w, h)
+    frame:SetPoint(ui.point or "LEFT", UIParent, ui.relPoint or "LEFT", ui.x or 40, ui.y or 0)
+
+    if frame.lock then
+        frame.lock:SetChecked(profile.locked and true or false)
+    end
+
+    if ui.shown == false then
+        frame:Hide()
+    else
+        frame:Show()
+    end
+
+    self:Refresh()
+end
+
+local welcomeFrame
+local optionsPanel
+
+local function DismissWelcome(markDone)
+    if not ns.profile then return end
+    ns.profile.welcomeDismissed = true
+    if markDone then
+        ns.profile.welcomeSeen = true
+    end
+    if welcomeFrame and welcomeFrame.Hide then
+        welcomeFrame:Hide()
+    end
+end
+
+function UI:ShowWelcome(force)
+    self:Create()
+    if not ns.profile then return end
+    if not force and (ns.profile.welcomeSeen or ns.profile.welcomeDismissed) then
+        return
+    end
+
+    if not welcomeFrame then
+        local wf = CreateFrame("Frame", "ForeverLevelingGuideWelcomeFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+        wf:SetSize(500, 320)
+        wf:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+        wf:SetFrameStrata("DIALOG")
+        wf:SetClampedToScreen(true)
+        wf:EnableMouse(true)
+        wf:SetMovable(true)
+        wf:RegisterForDrag("LeftButton")
+        wf:SetScript("OnDragStart", function(selfFrame) if not (InCombatLockdown and InCombatLockdown()) then selfFrame:StartMoving() end end)
+        wf:SetScript("OnDragStop", function(selfFrame) selfFrame:StopMovingOrSizing() end)
+        CreateBackdrop(wf)
+
+        local title = wf:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+        title:SetPoint("TOP", wf, "TOP", 0, -16)
+        title:SetText("|cff4dd0ffWoW Forever Leveling Guide Addon ByJTT|r")
+
+        local by = wf:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        by:SetPoint("TOP", title, "BOTTOM", 0, -2)
+        by:SetText("|cffaaaaaaby ByJTT - " .. tostring(ns.WEB or "https://byjtt.com") .. "|r")
+
+        local body = wf:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
+        body:SetPoint("TOPLEFT", wf, "TOPLEFT", 20, -54)
+        body:SetPoint("TOPRIGHT", wf, "TOPRIGHT", -20, -54)
+        body:SetJustifyH("LEFT")
+        body:SetJustifyV("TOP")
+        body:SetSpacing(2)
+        wf.body = body
+
+        local function mkBtn(text, x, y, w, onClick)
+            local b = CreateFrame("Button", nil, wf, "UIPanelButtonTemplate")
+            b:SetSize(w or 120, 22)
+            b:SetPoint("BOTTOM", wf, "BOTTOM", x, y)
+            b:SetText(text)
+            b:SetScript("OnClick", onClick)
+            return b
+        end
+
+        mkBtn("Got it", -165, 16, 90, function()
+            DismissWelcome(true)
+            if ns.Print then ns:Print("You're all set. Use Guides or /flg continue to load a route. Type /flg help anytime.") end
+        end)
+        mkBtn("Open Settings", -55, 16, 110, function()
+            DismissWelcome(true)
+            if UI.OpenOptions then UI:OpenOptions() end
+        end)
+        mkBtn("Guides", 55, 16, 90, function()
+            DismissWelcome(true)
+            UI:Show()
+            if frame and frame.guidesBtn then
+                ToggleGuidePicker(frame.guidesBtn)
+            elseif frame then
+                ToggleGuidePicker(frame)
+            end
+        end)
+        mkBtn("Later", 165, 16, 80, function()
+            DismissWelcome(false)
+        end)
+
+        welcomeFrame = wf
+    end
+
+    if welcomeFrame.body then
+        welcomeFrame.body:SetText(
+            "A clear, step-by-step leveling guide to help you know what to do next.\n\n" ..
+            "-  Use |cffffd100Guides|r or |cffffd100/flg continue|r to load a route for your character.\n" ..
+            "-  Follow each step in the panel. Click |cffffd100Next|r, |cffffd100Prev|r, or |cffffd100Skip|r anytime (manual control always works).\n" ..
+            "-  The arrow/minimap button can help with navigation. Use |cffffd100/flg way|r for a custom waypoint.\n" ..
+            "-  Routes marked |cff888888scaffold/WIP|r are original outlines refined by relative leveling flow and still need in-game verification on WoW Forever.\n\n" ..
+            "Safe by design: this addon gives guidance only (no gameplay automation).\n" ..
+            "Tip: |cffffd100/flg config|r opens settings, |cffffd100/flg help|r lists commands, and |cffffd100/flg debug export|r creates a copyable report for tuning."
+        )
+    end
+
+    welcomeFrame:Show()
+end
+
+function UI:EnsureOptionsPanel()
+    if optionsPanel then return optionsPanel end
+
+    local panel = CreateFrame("Frame", "ForeverLevelingGuideOptionsPanel", UIParent, BackdropTemplateMixin and "BackdropTemplate" or nil)
+    panel.name = ns.DISPLAY_NAME or "WoW Forever Leveling Guide Addon ByJTT"
+    panel:Hide()
+
+    local title = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    title:SetPoint("TOPLEFT", 16, -16)
+    title:SetText("|cff4dd0ffWoW Forever Leveling Guide Addon|r |cffaaaaaaby ByJTT|r")
+
+    local sub = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    sub:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -6)
+    sub:SetText("Step-by-step leveling guidance for all skill levels. Safe, guidance-only, and easy to adjust. Type /flg help for commands.")
+
+    local y = -58
+    local function mkCheck(label, get, set, tooltip)
+        local cb = CreateFrame("CheckButton", nil, panel, "InterfaceOptionsCheckButtonTemplate")
+        cb:SetPoint("TOPLEFT", 16, y)
+        if cb.Text and cb.Text.SetText then
+            cb.Text:SetText(label)
+        elseif cb.text and cb.text.SetText then
+            cb.text:SetText(label)
+        end
+        cb:SetScript("OnShow", function(self) self:SetChecked(get() and true or false) end)
+        cb:SetScript("OnClick", function(self) set(self:GetChecked() and true or false) end)
+        if tooltip then
+            cb.tooltipText = label
+            cb.tooltipRequirement = tooltip
+        end
+        y = y - 26
+        return cb
+    end
+
+    mkCheck("Show navigation arrow", function() return ns.profile and ns.profile.showArrow end, function(v)
+        if not ns.profile then return end
+        ns.profile.showArrow = v and true or false
+        if ns.Arrow and ns.Arrow.Update then ns.Arrow:Update() end
+        if ns.Print then ns:Print("Navigation arrow: " .. (ns.profile.showArrow and "|cff88ff88ON|r" or "|cffff8888OFF|r")) end
+    end, "Shows an arrow toward the current step/waypoint when available (best-effort).")
+
+    mkCheck("Auto-advance steps (best-effort)", function() return ns.profile and ns.profile.autoAdvance end, function(v)
+        if not ns.profile then return end
+        ns.profile.autoAdvance = v and true or false
+        if ns.Print then ns:Print("Auto-advance: " .. (ns.profile.autoAdvance and "|cff88ff88ON|r" or "|cffff8888OFF|r")) end
+    end, "Automatically moves to the next step when completion is detected. Manual controls always work.")
+
+    mkCheck("Announce progress in chat", function() return ns.profile and ns.profile.announce end, function(v)
+        if not ns.profile then return end
+        ns.profile.announce = v and true or false
+        if ns.Print then ns:Print("Announcements: " .. (ns.profile.announce and "|cff88ff88ON|r" or "|cffff8888OFF|r")) end
+    end)
+
+    mkCheck("Show minimap button", function() return ns.profile and ns.profile.minimap and not ns.profile.minimap.hide end, function(v)
+        if not ns.profile then return end
+        ns.profile.minimap = ns.profile.minimap or {}
+        ns.profile.minimap.hide = not (v and true or false)
+        if UI.UpdateMinimapButton then UI:UpdateMinimapButton() end
+        if ns.Print then ns:Print("Minimap button: " .. ((ns.profile.minimap.hide) and "|cffff8888OFF|r" or "|cff88ff88ON|r")) end
+    end, "Left-click: show/hide panel. Right-click: open Guides. Drag to move.")
+
+    mkCheck("Lock panel position/size", function() return ns.profile and ns.profile.locked end, function(v)
+        if not ns.profile then return end
+        ns.profile.locked = v and true or false
+        if frame and frame.lock and frame.lock.SetChecked then frame.lock:SetChecked(ns.profile.locked and true or false) end
+        if UI.Refresh then UI:Refresh() end
+        if ns.Print then ns:Print("Panel lock: " .. (ns.profile.locked and "|cff88ff88ON|r" or "|cffff8888OFF|r")) end
+    end, "When locked, the guide panel cannot be moved or resized.")
+
+    mkCheck("Update notifications (peer, no internet)", function() return ns.profile and ns.profile.updateNotify ~= false end, function(v)
+        if not ns.profile then return end
+        ns.profile.updateNotify = v and true or false
+        if ns.profile.updateNotify and ns.ScheduleVersionBroadcast then ns:ScheduleVersionBroadcast(2, true) end
+        if ns.Print then ns:Print("Update notifications (peer, no internet): " .. (ns.profile.updateNotify and "|cff88ff88ON|r" or "|cffff8888OFF|r")) end
+    end, "Best-effort: notifies you if a group/guild peer runs a newer version. No internet and no auto-install. Get updates via CurseForge/WowUp/Wago when released, or from the repo.")
+
+    y = y - 8
+    local actions = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    actions:SetPoint("TOPLEFT", 16, y)
+    actions:SetText("Quick actions")
+    y = y - 30
+
+    local btnRow1 = {
+        { "Open Guides", function() UI:Show(); if frame and frame.guidesBtn then ToggleGuidePicker(frame.guidesBtn) end end },
+        { "Show Welcome", function() UI:ShowWelcome(true) end },
+        { "Reset Window", function() if ns.ResetWindowPosition then ns:ResetWindowPosition() end end },
+    }
+    local bx = 16
+    for _, def in ipairs(btnRow1) do
+        local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+        b:SetSize(120, 22)
+        b:SetPoint("TOPLEFT", bx, y)
+        b:SetText(def[1])
+        b:SetScript("OnClick", def[2])
+        bx = bx + 128
+    end
+    y = y - 30
+
+    local btnRow2 = {
+        { "Reset Settings", function() if ns.ResetAddonSettings then ns:ResetAddonSettings() end end },
+        { "Debug Export", function() if ns.ShowDebugExport then ns:ShowDebugExport() end end },
+        { "Close", function() panel:Hide() end },
+    }
+    bx = 16
+    for _, def in ipairs(btnRow2) do
+        local b = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+        b:SetSize(120, 22)
+        b:SetPoint("TOPLEFT", bx, y)
+        b:SetText(def[1])
+        b:SetScript("OnClick", def[2])
+        bx = bx + 128
+    end
+    y = y - 36
+
+    local help = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    help:SetPoint("TOPLEFT", 16, y)
+    help:SetPoint("TOPRIGHT", panel, "TOPRIGHT", -16, y)
+    help:SetJustifyH("LEFT")
+    help:SetWordWrap(true)
+    help:SetText("Common commands: /flg continue, /flg suggest, /flg goto <n>, /flg way clear, /flg resetui, /flg help.\nRoutes marked scaffold/WIP are original outlines (relative flow) and need WoW Forever in-game verification before release-quality tuning.")
+
+    local about = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    about:SetPoint("BOTTOMLEFT", panel, "BOTTOMLEFT", 16, 14)
+    about:SetPoint("BOTTOMRIGHT", panel, "BOTTOMRIGHT", -16, 14)
+    about:SetJustifyH("LEFT")
+    about:SetText("|cff888888" .. tostring(ns.DISPLAY_NAME or panel.name) .. " - v" .. tostring(ns.VERSION or "?") .. " - by ByJTT - " .. tostring(ns.WEB or "https://byjtt.com") .. " - " .. tostring(ns.REPO or "") .. "\nSupport (placeholder): " .. tostring(ns.SUPPORT or "https://buymeacoffee.com/ByJTT") .. "|r")
+
+    optionsPanel = panel
+
+    local registered = false
+    if Settings and Settings.RegisterCanvasLayoutCategory and Settings.RegisterAddOnCategory then
+        local ok, cat = pcall(Settings.RegisterCanvasLayoutCategory, panel, panel.name)
+        if ok and cat then
+            cat.ID = panel.name
+            pcall(Settings.RegisterAddOnCategory, cat)
+            panel._settingsCategory = cat
+            registered = true
+        end
+    end
+    if not registered and InterfaceOptions_AddCategory then
+        pcall(InterfaceOptions_AddCategory, panel)
+        registered = true
+    end
+    panel._registered = registered
+    return panel
+end
+
+function UI:OpenOptions()
+    local panel = self:EnsureOptionsPanel()
+    if not panel then
+        if ns.Print then ns:Print("Settings UI not available on this client. Use /flg help for commands.") end
+        return
+    end
+
+    if Settings and Settings.OpenToCategory and panel._settingsCategory then
+        local ok = pcall(Settings.OpenToCategory, panel._settingsCategory.ID or panel._settingsCategory)
+        if ok then return end
+    end
+    if InterfaceOptionsFrame_OpenToCategory then
+        InterfaceOptionsFrame_OpenToCategory(panel)
+        InterfaceOptionsFrame_OpenToCategory(panel)
+        return
+    end
+
+    panel:ClearAllPoints()
+    panel:SetSize(560, 420)
+    panel:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+    panel:SetFrameStrata("DIALOG")
+    panel:SetClampedToScreen(true)
+    panel:EnableMouse(true)
+    panel:SetMovable(true)
+    panel:RegisterForDrag("LeftButton")
+    panel:SetScript("OnDragStart", function(selfFrame) if not (InCombatLockdown and InCombatLockdown()) then selfFrame:StartMoving() end end)
+    panel:SetScript("OnDragStop", function(selfFrame) selfFrame:StopMovingOrSizing() end)
+    if not panel._standaloneStyled then
+        if panel.SetBackdrop then
+            panel:SetBackdrop({
+                bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+                edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+                tile = true, tileSize = 32, edgeSize = 32,
+                insets = { left = 11, right = 12, top = 12, bottom = 11 }
+            })
+        else
+            local bg = panel:CreateTexture(nil, "BACKGROUND")
+            bg:SetAllPoints(true)
+            bg:SetColorTexture(0, 0, 0, 0.92)
+            panel._standaloneBg = bg
+        end
+        panel._standaloneStyled = true
+    end
+    panel:Show()
+    if ns.Print then ns:Print("Settings panel opened (standalone). Drag to move; use Close to dismiss.") end
 end

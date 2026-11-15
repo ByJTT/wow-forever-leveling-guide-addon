@@ -7,7 +7,9 @@
 ## Features
 
 - **Step-by-step guide panel** - current step details (type, quest/NPC/zone/coords/notes/tips), progress counter, in-panel **Guides** picker, and Prev/Next/Skip/Reset controls with clear tooltips.
+- **Easy to start (all skill levels)** - short, re-openable **Welcome guide** (`/flg onboarding`), grouped `/flg help`, and discoverable controls so you can follow the happy path without memorizing commands.
 - **Minimap button (discoverable access)** - draggable minimap button: **left-click** show/hide panel, **right-click** open Guides list, tooltip help, and `/flg minimap` toggle. Position is saved per profile.
+- **In-game settings panel** - Blizzard Settings/InterfaceOptions integration when available with a **standalone movable fallback** (`/flg config`) for arrow, auto-advance, announcements, minimap, panel lock, update notifications, and quick actions (open Guides, welcome, reset window, reset settings, debug export).
 - **Navigation arrow** - follows the current step's map coordinates when available (best-effort, client/API dependent) and hides when no valid target/step is available. Supports a **manual waypoint override** (`/flg way`) and optional best-effort TomTom waypoint integration when TomTom is installed (no dependency).
 - **Manual waypoint & step jump** - set/clear a temporary waypoint (`/flg way here|clear|<x> <y>|<mapID> <x> <y>`) for quick navigation, and jump directly to a step with `/flg goto <n>`.
 - **Auto-advance (best effort)** - detects quest accept/complete/turn-in, level-ups, item collection, and arrival at travel steps; manual controls always available.
@@ -48,13 +50,17 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 ```text
 /flg                    show guide panel
 /flg show|hide|toggle   show/hide/toggle the guide panel
+/flg config             open settings (WoW UI or standalone fallback)
+/flg onboarding         show the welcome guide again
 /flg list               list available guides
 /flg load <key>         load a guide (e.g. horde_01_10_durotar)
-/flg next|prev|skip     navigate steps manually
-/flg reset              reset progress for the current character/guide
-/flg goto <n>           jump to a step number (1-based)
 /flg continue           load the next/suggested guide (guide chain or best match)
 /flg suggest            suggest a next guide for your level/faction
+/flg next|prev|skip     navigate steps manually
+/flg goto <n>           jump to a step number (1-based)
+/flg reset              reset progress for the current character/guide
+/flg resetui            reset window position/size
+/flg resetdefaults      reset addon settings (keeps guide progress)
 /flg arrow              toggle navigation arrow
 /flg auto               toggle auto-advance
 /flg announce           toggle chat announcements
@@ -68,7 +74,7 @@ Primary slash command: **`/flg`** (aliases: `/levelguide`, `/journey`, `/jf`)
 /flg help               show commands
 ```
 
-- You can also use the **minimap button** (left-click show/hide, right-click Guides, drag to move) or the in-panel **Guides** button to pick and load a guide quickly.
+- You can also use the **minimap button** (left-click show/hide, right-click Guides, drag to move), the in-panel **Guides** button, or **`/flg config`** for settings. A short **Welcome guide** helps first-time users get started and can be reopened anytime.
 - A manual waypoint (`/flg way`) temporarily overrides the arrow target until cleared with `/flg way clear`.
 - On first login (if no guide is loaded), the addon attempts to auto-select a bundled starter guide for your faction when available.
 
